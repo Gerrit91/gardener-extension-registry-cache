@@ -28,7 +28,7 @@ IGNORE_OPERATION_ANNOTATION := true
 #########################################
 
 TOOLS_DIR := hack/tools
-include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
+-include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 #########################################
 # Rules for local development scenarios #
@@ -50,7 +50,7 @@ start:
 #################################################################
 
 .PHONY: install
-install:
+install: revendor
 	@LD_FLAGS="-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(VERSION)" \
 	$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install.sh ./...
 
