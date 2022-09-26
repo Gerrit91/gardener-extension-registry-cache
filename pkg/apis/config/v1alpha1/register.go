@@ -51,7 +51,9 @@ func init() {
 
 // Adds the list of known types to api.Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(SchemeGroupVersion) // &Configuration{},
+	scheme.AddKnownTypes(SchemeGroupVersion,
+		&Configuration{},
+	)
 
 	return nil
 }

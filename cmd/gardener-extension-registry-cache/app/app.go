@@ -42,7 +42,7 @@ func NewServiceControllerCommand() *cobra.Command {
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := options.optionAggregator.Complete(); err != nil {
-				return fmt.Errorf("error completing options: %s", err)
+				return fmt.Errorf("error completing options: %w", err)
 			}
 			cmd.SilenceUsage = true
 			return options.run(cmd.Context())
@@ -70,20 +70,16 @@ func (o *Options) run(ctx context.Context) error {
 
 	mgr, err := manager.New(o.restOptions.Completed().Config, mgrOpts)
 	if err != nil {
-		return fmt.Errorf("could not instantiate controller-manager: %s", err)
+		return fmt.Errorf("could not instantiate controller-manager: %w", err)
 	}
 
 	if err := extensionscontroller.AddToScheme(mgr.GetScheme()); err != nil {
-		return fmt.Errorf("could not update manager scheme: %s", err)
+		return fmt.Errorf("could not update manager scheme: %w", err)
 	}
 
 	if err := serviceinstall.AddToScheme(mgr.GetScheme()); err != nil {
-		return fmt.Errorf("could not update manager scheme: %s", err)
+		return fmt.Errorf("could not update manager scheme: %w", err)
 	}
-
-	// if err := registryv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
-	// 	return fmt.Errorf("could not update manager scheme: %s", err)
-	// }
 
 	ctrlConfig := o.registryOptions.Completed()
 	ctrlConfig.ApplyHealthCheckConfig(&healthcheck.DefaultAddOptions.HealthCheckConfig)
@@ -93,11 +89,11 @@ func (o *Options) run(ctx context.Context) error {
 	o.reconcileOptions.Completed().Apply(&controller.DefaultAddOptions.IgnoreOperationAnnotation)
 
 	if err := o.controllerSwitches.Completed().AddToManager(mgr); err != nil {
-		return fmt.Errorf("could not add controllers to manager: %s", err)
+		return fmt.Errorf("could not add controllers to manager: %w", err)
 	}
 
 	if err := mgr.Start(ctx); err != nil {
-		return fmt.Errorf("error running manager: %s", err)
+		return fmt.Errorf("error running manager: %w", err)
 	}
 
 	return nil
