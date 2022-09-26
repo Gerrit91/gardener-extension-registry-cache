@@ -24,8 +24,8 @@ import (
 type RegistryConfig struct {
 	metav1.TypeMeta
 
-	// RegistryMirrors is a slice of registry mirrors to deploy
-	RegistryMirrors []RegistryMirror
+	// Mirrors is a slice of registry mirrors to deploy
+	Mirrors []RegistryMirror
 }
 
 // RegistryMirror defines a registry mirror to deploy

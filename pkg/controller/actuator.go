@@ -124,8 +124,18 @@ func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func (a *actuator) createResources(ctx context.Context, RegistryConfig *service.RegistryConfig, cluster *controller.Cluster, namespace string) error {
-	values := map[string]interface{}{}
+func (a *actuator) createResources(ctx context.Context, registryConfig *service.RegistryConfig, cluster *controller.Cluster, namespace string) error {
+	var mirrors []map[string]interface{}
+	for _, m := range registryConfig.Mirrors {
+		mirrors = append(mirrors, map[string]interface{}{
+			"remoteURL": m.RemoteURL,
+			"port":      m.Port,
+		})
+	}
+
+	values := map[string]interface{}{
+		"mirrors": mirrors,
+	}
 
 	renderer, err := util.NewChartRendererForShoot(cluster.Shoot.Spec.Kubernetes.Version)
 	if err != nil {

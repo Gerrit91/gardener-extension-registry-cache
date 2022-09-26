@@ -22,7 +22,7 @@ import (
 const RegistryResourceName = "extension-registry-cache"
 
 // RegistryChartNameSeed is the name of the chart for registry in the seed.
-const RegistryChartName = "gardener-extension-registry-cache"
+const RegistryChartName = "registry-cache"
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -31,8 +31,8 @@ const RegistryChartName = "gardener-extension-registry-cache"
 type RegistryConfig struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// RegistryMirrors is a slice of registry mirrors to deploy
-	RegistryMirrors []RegistryMirror `json:"registries"`
+	// Mirrors is a slice of registry mirrors to deploy
+	Mirrors []RegistryMirror `json:"registries"`
 }
 
 // RegistryMirror defines a registry mirror to deploy
