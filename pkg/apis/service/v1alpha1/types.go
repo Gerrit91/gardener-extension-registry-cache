@@ -30,4 +30,15 @@ const RegistryChartName = "gardener-extension-registry-cache"
 // RegistryConfig configuration resource
 type RegistryConfig struct {
 	metav1.TypeMeta `json:",inline"`
+
+	// RegistryMirrors is a slice of registry mirrors to deploy
+	RegistryMirrors []RegistryMirror `json:"registries"`
+}
+
+// RegistryMirror defines a registry mirror to deploy
+type RegistryMirror struct {
+	// RemoteURL is the remote URL of registry to mirror
+	RemoteURL string `json:"remoteURL"`
+	// Port is the port on which the registry mirror is going to serve
+	Port int `json:"port"`
 }

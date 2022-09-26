@@ -24,6 +24,7 @@ import (
 	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service"
 	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
+	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/validation"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
@@ -63,30 +64,28 @@ type actuator struct {
 
 // Reconcile the Extension resource.
 func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
-	// namespace := ex.GetNamespace()
+	namespace := ex.GetNamespace()
 
-	// cluster, err := controller.GetCluster(ctx, a.client, namespace)
-	// if err != nil {
-	// 	return err
-	// }
+	cluster, err := controller.GetCluster(ctx, a.client, namespace)
+	if err != nil {
+		return err
+	}
 
-	// RegistryConfig := &service.RegistryConfig{}
-	// if ex.Spec.ProviderConfig != nil {
-	// 	if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, RegistryConfig); err != nil {
-	// 		return fmt.Errorf("failed to decode provider config: %+v", err)
-	// 	}
-	// 	if errs := validation.ValidateRegistryConfig(RegistryConfig, cluster); len(errs) > 0 {
-	// 		return errs.ToAggregate()
-	// 	}
-	// }
+	RegistryConfig := &service.RegistryConfig{}
+	if ex.Spec.ProviderConfig != nil {
+		if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, RegistryConfig); err != nil {
+			return fmt.Errorf("failed to decode provider config: %w", err)
+		}
+		if errs := validation.ValidateRegistryConfig(RegistryConfig, cluster); len(errs) > 0 {
+			return errs.ToAggregate()
+		}
+	}
 
-	// if err := a.createResources(ctx, RegistryConfig, cluster, namespace); err != nil {
-	// 	return err
-	// }
+	if err := a.createResources(ctx, RegistryConfig, cluster, namespace); err != nil {
+		return err
+	}
 
-	// return a.updateStatus(ctx, ex, RegistryConfig)
-
-	return nil
+	return a.updateStatus(ctx, ex, RegistryConfig)
 }
 
 // Delete the Extension resource.

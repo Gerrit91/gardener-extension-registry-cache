@@ -23,4 +23,15 @@ import (
 // RegistryConfig configuration resource
 type RegistryConfig struct {
 	metav1.TypeMeta
+
+	// RegistryMirrors is a slice of registry mirrors to deploy
+	RegistryMirrors []RegistryMirror
+}
+
+// RegistryMirror defines a registry mirror to deploy
+type RegistryMirror struct {
+	// RemoteURL is the remote URL of registry to mirror
+	RemoteURL string
+	// Port is the port on which the registry mirror is going to serve
+	Port int
 }

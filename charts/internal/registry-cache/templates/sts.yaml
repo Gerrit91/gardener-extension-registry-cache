@@ -1,0 +1,48 @@
+{{- range $i, $v := .Values.mirrors }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "registry-cache.fullname" $ }}-{{ $i }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    helm.sh/chart: {{ include "registry-cache.chart" $ }}
+    app.kubernetes.io/name: {{ include "registry-cache.name" $ }}-{{ $i }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}-{{ $i }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "registry-cache.fullname" $ }}-{{ $i }}
+  serviceName: {{ include "registry-cache.fullname" $ }}-{{ $i }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: {{ include "registry-cache.fullname" $ }}-{{ $i }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: {{ $.Chart.Name }}
+        image: {{ index $.Values.images "registry" }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: registry
+          containerPort: {{ $v.port }}
+        env:
+        - name: REGISTRY_PROXY_REMOTEURL
+          value: {{ $v.remoteURL }}
+        - name: REGISTRY_STORAGE_DELETE_ENABLED
+          value: "true"
+        volumeMounts:
+        - name: cache
+          mountPath: /var/lib/registry
+  volumeClaimTemplates:
+  - metadata:
+      name: cache
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ $.Values.volumeSize }}
+{{ end }}

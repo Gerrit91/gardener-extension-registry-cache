@@ -1,1 +1,23 @@
 ---
+mirrors:
+- remoteURL: https://registry-1.docker.io
+  port: 5000
+
+nameOverride: ""
+fullnameOverride: registry-cache
+
+images:
+  registry: any-repo:any-tag
+
+volumeSize: 2Gi
+
+resources:
+  requests:
+   cpu: 100m
+   memory: 128Mi
+  limits:
+   memory: 600Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

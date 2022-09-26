@@ -1,0 +1,15 @@
+{{- range $i, $v := .Values.mirrors }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "registry-cache.fullname" $ }}-{{ $i }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  selector:
+    app: {{ include "registry-cache.fullname" $ }}-{{ $i }}
+  ports:
+  - port: {{ $v.port }}
+    targetPort: registry
+  type: ClusterIP
+{{ end }}
