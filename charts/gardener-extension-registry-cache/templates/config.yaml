@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: extension-registry-cache.config
+  namespace: {{ .Release.Namespace }}
+data:
+  config.yaml: {{ include "config" . | b64enc | trim }}
