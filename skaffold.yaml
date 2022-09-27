@@ -1,0 +1,20 @@
+---
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: extension-registry-cache
+build:
+  artifacts:
+  - image: ghcr.io/gerrit91/gardener-extension-registry-cache
+    ko:
+      main: ./cmd/gardener-extension-registry-cache
+deploy:
+  helm:
+    releases:
+    - name: gardener-extension-registry-cache-registration
+      chartPath: charts/registration
+      artifactOverrides:
+        values:
+          image: ghcr.io/gerrit91/gardener-extension-registry-cache
+      imageStrategy:
+        helm: {}

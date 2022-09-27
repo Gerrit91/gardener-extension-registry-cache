@@ -120,3 +120,12 @@ verify: check format test
 
 .PHONY: verify-extended
 verify-extended: check-generate check format test-cov test-clean
+
+# use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
+extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
+
+extension-up: $(SKAFFOLD) $(HELM)
+	$(SKAFFOLD) run
+
+extension-down: $(SKAFFOLD) $(HELM)
+	$(SKAFFOLD) delete
