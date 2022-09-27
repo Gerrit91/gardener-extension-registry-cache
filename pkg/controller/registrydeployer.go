@@ -63,6 +63,19 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 	}
 	c.Name = strings.Replace(fmt.Sprintf("registry-%s", u.Host), ".", "-", -1)
 
+	// TODO: move to defaulter
+	if c.CacheVolumeSize == nil {
+		c.CacheVolumeSize = pointer.String("2Gi")
+	}
+	if c.CacheGarbageCollectionEnabled == nil {
+		c.CacheGarbageCollectionEnabled = pointer.Bool(true)
+	}
+	if c.Labels == nil {
+		c.Labels = map[string]string{
+			"app": c.Name,
+		}
+	}
+
 	volumeSize, err := resource.ParseQuantity(*c.CacheVolumeSize)
 	if err != nil {
 		return nil, err
