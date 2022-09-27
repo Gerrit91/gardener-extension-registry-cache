@@ -17,4 +17,4 @@
 
 //go:generate ../../../hack/update-codegen.sh
 
-package service // import "github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service"
+package service // import "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service"

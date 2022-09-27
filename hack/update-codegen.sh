@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 #
@@ -28,34 +28,34 @@ PROJECT_ROOT=$(dirname $0)/..
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
   deepcopy,defaulter \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/client \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/client \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   "service:v1alpha1" \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
   conversion \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/client \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/client \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   "service:v1alpha1" \
-  --extra-peer-dirs=github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service,github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/conversion,k8s.io/apimachinery/pkg/runtime \
+  --extra-peer-dirs=github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service,github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/conversion,k8s.io/apimachinery/pkg/runtime \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
   deepcopy,defaulter \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/client/componentconfig \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/client/componentconfig \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   "config:v1alpha1" \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
   conversion \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/client/componentconfig \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis \
-  github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/client/componentconfig \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   "config:v1alpha1" \
-  --extra-peer-dirs=github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config,github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/conversion,k8s.io/apimachinery/pkg/runtime,github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1 \
+  --extra-peer-dirs=github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config,github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/conversion,k8s.io/apimachinery/pkg/runtime,github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1 \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"

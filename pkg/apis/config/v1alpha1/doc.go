@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // +k8s:deepcopy-gen=package
-// +k8s:conversion-gen=github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config
+// +k8s:conversion-gen=github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:openapi-gen=true
 

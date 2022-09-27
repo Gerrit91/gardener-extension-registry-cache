@@ -1,7 +1,7 @@
 ############# builder
 FROM golang:1.19 AS builder
 
-WORKDIR /go/src/github.com/Gerrit91/gardener-extension-registry-cache
+WORKDIR /go/src/github.com/gerrit91/gardener-extension-registry-cache
 COPY . .
 RUN make install
 

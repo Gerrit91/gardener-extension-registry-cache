@@ -17,7 +17,7 @@ package imagevector
 import (
 	"strings"
 
-	"github.com/Gerrit91/gardener-extension-registry-cache/charts"
+	"github.com/gerrit91/gardener-extension-registry-cache/charts"
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	"k8s.io/apimachinery/pkg/util/runtime"
 )

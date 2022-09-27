@@ -15,7 +15,7 @@
 package controller
 
 import (
-	controllerconfig "github.com/Gerrit91/gardener-extension-registry-cache/pkg/controller/config"
+	controllerconfig "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/config"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"sigs.k8s.io/controller-runtime/pkg/controller"

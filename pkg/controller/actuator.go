@@ -20,12 +20,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Gerrit91/gardener-extension-registry-cache/charts"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/validation"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/imagevector"
+	"github.com/gerrit91/gardener-extension-registry-cache/charts"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/validation"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/imagevector"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"

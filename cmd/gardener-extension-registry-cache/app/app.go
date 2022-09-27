@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	serviceinstall "github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/install"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/controller"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/controller/healthcheck"
+	serviceinstall "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/install"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/healthcheck"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/util"

@@ -94,8 +94,8 @@ generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(MOCKGEN)
 
 .PHONE: generate-in-docker
 generate-in-docker:
-	docker run --rm -it -v /home/gerrit/go:/go -v $(PWD):/go/src/github.com/Gerrit91/gardener-extension-registry-cache golang:1.19 \
-		sh -c "cd /go/src/github.com/Gerrit91/gardener-extension-registry-cache \
+	docker run --rm -it -v /home/gerrit/go:/go -v $(PWD):/go/src/github.com/gerrit91/gardener-extension-registry-cache golang:1.19 \
+		sh -c "cd /go/src/github.com/gerrit91/gardener-extension-registry-cache \
 				&& make revendor install generate \
 				&& chown -R $(shell id -u):$(shell id -g) ."
 
@@ -120,3 +120,15 @@ verify: check format test
 
 .PHONY: verify-extended
 verify-extended: check-generate check format test-cov test-clean
+
+# use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
+extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
+
+extension-up: $(SKAFFOLD) $(HELM)
+	$(SKAFFOLD) run
+
+extension-dev: $(SKAFFOLD) $(HELM)
+	$(SKAFFOLD) dev --cleanup=false --trigger=manual
+
+extension-down: $(SKAFFOLD) $(HELM)
+	$(SKAFFOLD) delete

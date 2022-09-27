@@ -15,7 +15,7 @@
 package validation
 
 import (
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"k8s.io/apimachinery/pkg/util/validation/field"
