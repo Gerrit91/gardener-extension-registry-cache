@@ -96,7 +96,7 @@ func NewOptions() *Options {
 		controllercmd.PrefixOption("healthcheck-", options.healthOptions),
 		options.controllerSwitches,
 		options.reconcileOptions,
-		webhookSwitchOptions,
+		webhookOptions,
 	)
 
 	return options
