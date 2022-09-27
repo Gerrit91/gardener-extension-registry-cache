@@ -45,7 +45,7 @@ bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh 
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
   deepcopy,defaulter \
-  github.com/gerrit91/gardener-extension-registry-cache/pkg/client/componentconfig \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/client \
   github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   "config:v1alpha1" \
@@ -53,7 +53,7 @@ bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh 
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
   conversion \
-  github.com/gerrit91/gardener-extension-registry-cache/pkg/client/componentconfig \
+  github.com/gerrit91/gardener-extension-registry-cache/pkg/client \
   github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   "config:v1alpha1" \

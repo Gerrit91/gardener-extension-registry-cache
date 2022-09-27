@@ -16,6 +16,7 @@ package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -25,7 +26,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 // SetDefaults_RegistryConfig sets the defaults for the Registry Cache configuration
 func SetDefaults_RegistryConfig(obj *RegistryConfig) {
 	for _, mirror := range obj.Mirrors {
-		mirror.CacheGarbageCollectionEnabled = true
-		mirror.CacheSize = "1Gi"
+		mirror.CacheGarbageCollectionEnabled = pointer.Bool(true)
+		mirror.CacheSize = pointer.String("1Gi")
 	}
 }
