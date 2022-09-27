@@ -9,6 +9,50 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 rules:
 - apiGroups:
+  - extensions.gardener.cloud
+  resources:
+  - clusters
+  - dnsrecords
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - extensions.gardener.cloud
+  resources:
+  - extensions
+  - extensions/status
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+- apiGroups:
+  - resources.gardener.cloud
+  resources:
+  - managedresources
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
   - ""
   resources:
   - namespaces
@@ -32,20 +76,11 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - "secrets"
-  - "events"
+  - events
   verbs:
-  - "*"
-- apiGroups:
-  - "apps"
-  resources:
-  - "deployments"
-  verbs:
-  - get
   - create
   - update
   - patch
-  - delete
 - apiGroups:
   - coordination.k8s.io
   resources:
