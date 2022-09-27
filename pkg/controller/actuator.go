@@ -24,7 +24,6 @@ import (
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
-	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/validation"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/imagevector"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
@@ -76,9 +75,6 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 	if ex.Spec.ProviderConfig != nil {
 		if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, RegistryConfig); err != nil {
 			return fmt.Errorf("failed to decode provider config: %w", err)
-		}
-		if errs := validation.ValidateRegistryConfig(RegistryConfig, cluster); len(errs) > 0 {
-			return errs.ToAggregate()
 		}
 	}
 
