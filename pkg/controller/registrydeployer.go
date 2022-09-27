@@ -40,18 +40,16 @@ type registryCache struct {
 
 	Name                          string
 	RemoteURL                     string
-	CacheVolumeSize               string
-	CacheGarbageCollectionEnabled bool
+	CacheVolumeSize               *string
+	CacheGarbageCollectionEnabled *bool
 
 	RegistryImage *imagevector.Image
 }
 
 const (
 	registryCacheNamespaceName = "registry-cache"
-	registryCacheServiceName   = "registry-cache"
-	registryContainerName      = "registry-cache"
-	registryPortName           = "registry-cache"
-	registryVolumeName         = "registry-cache"
+	registryCacheInternalName  = "registry-cache"
+	registryCacheVolumeName    = "cache-volume"
 	registryVolumeMountPath    = "/var/lib/registry"
 
 	environmentVarialbleNameRegistryURL    = "REGISTRY_PROXY_REMOTEURL"
@@ -65,7 +63,7 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 	}
 	c.Name = strings.Replace(fmt.Sprintf("registry-%s", u.Host), ".", "-", -1)
 
-	volumeSize, err := resource.ParseQuantity(c.CacheVolumeSize)
+	volumeSize, err := resource.ParseQuantity(*c.CacheVolumeSize)
 	if err != nil {
 		return nil, err
 	}
@@ -88,10 +86,10 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 			Spec: v1.ServiceSpec{
 				Selector: c.Labels,
 				Ports: []v1.ServicePort{{
-					Name:       registryPortName,
+					Name:       registryCacheInternalName,
 					Port:       5000,
 					Protocol:   v1.ProtocolTCP,
-					TargetPort: intstr.FromString(registryPortName),
+					TargetPort: intstr.FromString(registryCacheInternalName),
 				}},
 				Type: v1.ServiceTypeClusterIP,
 			},
@@ -116,13 +114,13 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
 							{
-								Name:            registryContainerName,
+								Name:            registryCacheInternalName,
 								Image:           c.RegistryImage.Name,
 								ImagePullPolicy: v1.PullIfNotPresent,
 								Ports: []v1.ContainerPort{
 									{
 										ContainerPort: 5000,
-										Name:          registryPortName,
+										Name:          registryCacheInternalName,
 									},
 								},
 								Env: []v1.EnvVar{
@@ -132,12 +130,12 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 									},
 									{
 										Name:  environmentVarialbleNameRegistryDelete,
-										Value: stringFromBool(c.CacheGarbageCollectionEnabled),
+										Value: stringFromBool(*c.CacheGarbageCollectionEnabled),
 									},
 								},
 								VolumeMounts: []v1.VolumeMount{
 									{
-										Name:      registryVolumeName,
+										Name:      registryCacheVolumeName,
 										ReadOnly:  false,
 										MountPath: registryVolumeMountPath,
 									},
@@ -149,7 +147,7 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 				VolumeClaimTemplates: []v1.PersistentVolumeClaim{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:   registryVolumeName,
+							Name:   registryCacheVolumeName,
 							Labels: c.Labels,
 						},
 						Spec: v1.PersistentVolumeClaimSpec{

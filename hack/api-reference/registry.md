@@ -85,6 +85,7 @@ string
 </em>
 </td>
 <td>
+<em>(Optional)</em>
 <p>CacheSize is the size of the registry cache</p>
 </td>
 </tr>
@@ -96,6 +97,7 @@ bool
 </em>
 </td>
 <td>
+<em>(Optional)</em>
 <p>CacheGarbageCollectionEnabled enables/disables cache garbage collection</p>
 </td>
 </tr>
