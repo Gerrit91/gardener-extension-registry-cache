@@ -3,7 +3,6 @@ gardener-extension-registry-cache
 {{- end -}}
 
 {{- define "config" -}}
----
 apiVersion: registry-cache.extensions.config.gardener.cloud/v1alpha1
 kind: Configuration
 {{- end }}

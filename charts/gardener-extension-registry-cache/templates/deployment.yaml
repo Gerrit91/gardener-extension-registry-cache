@@ -66,8 +66,8 @@ spec:
         {{- end }}
       volumes:
       - name: config
-        secret:
-          secretName: extension-registry-cache.config
+        configMap:
+          name: extension-registry-cache
       {{- if .Values.imageVectorOverwrite }}
       - name: extension-imagevector-overwrite
         configMap:

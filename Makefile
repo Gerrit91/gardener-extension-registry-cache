@@ -14,8 +14,7 @@
 
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := registry-cache
-REGISTRY                    := eu.gcr.io/gardener-project/gardener
-IMAGE_PREFIX                := $(REGISTRY)/extensions
+REGISTRY                    := ghcr.io/gerrit91
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 HACK_DIR                    := $(REPO_ROOT)/hack
 VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
@@ -28,7 +27,7 @@ IGNORE_OPERATION_ANNOTATION := true
 #########################################
 
 TOOLS_DIR := hack/tools
--include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
+include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 #########################################
 # Rules for local development scenarios #
@@ -60,7 +59,7 @@ docker-login:
 
 .PHONY: docker-images
 docker-images:
-	@docker build -t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
+	@docker build -t $(REGISTRY)/$(NAME):$(VERSION) -t $(REGISTRY)/$(NAME):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
