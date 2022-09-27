@@ -21,3 +21,11 @@ import (
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
+
+// SetDefaults_RegistryConfig sets the defaults for the Registry Cache configuration
+func SetDefaults_RegistryConfig(obj *RegistryConfig) {
+	for _, mirror := range obj.Mirrors {
+		mirror.CacheGarbageCollectionEnabled = true
+		mirror.CacheSize = "1Gi"
+	}
+}

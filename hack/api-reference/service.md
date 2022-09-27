@@ -96,6 +96,28 @@ int
 <p>Port is the port on which the registry mirror is going to serve</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>cacheSize</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>CacheSize is the size of the registry cache</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>cacheGarbageCollectionEnabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>CacheGarbageCollectionEnabled enables/disables cache garbage collection</p>
+</td>
+</tr>
 </tbody>
 </table>
 <hr/>

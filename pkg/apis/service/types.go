@@ -34,4 +34,8 @@ type RegistryMirror struct {
 	RemoteURL string
 	// Port is the port on which the registry mirror is going to serve
 	Port int
+	// CacheSize is the size of the registry cache
+	CacheSize string
+	// CacheGarbageCollectionEnabled enables/disables cache garbage collection
+	CacheGarbageCollectionEnabled bool
 }

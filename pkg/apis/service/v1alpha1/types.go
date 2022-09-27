@@ -41,4 +41,8 @@ type RegistryMirror struct {
 	RemoteURL string `json:"remoteURL"`
 	// Port is the port on which the registry mirror is going to serve
 	Port int `json:"port"`
+	// CacheSize is the size of the registry cache
+	CacheSize string `json:"cacheSize"`
+	// CacheGarbageCollectionEnabled enables/disables cache garbage collection
+	CacheGarbageCollectionEnabled bool `json:"cacheGarbageCollectionEnabled"`
 }
