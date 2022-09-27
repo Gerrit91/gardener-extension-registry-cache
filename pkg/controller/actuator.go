@@ -17,12 +17,8 @@ package controller
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"time"
 
-	"k8s.io/utils/pointer"
-
-	"github.com/gerrit91/gardener-extension-registry-cache/charts"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
@@ -30,12 +26,9 @@ import (
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
-	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/chartrenderer"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -107,36 +100,58 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	return nil
 }
 
-func (a *actuator) createResources(ctx context.Context, registryConfig *registry.RegistryConfig, cluster *controller.Cluster, namespace string) error {
-	var mirrors []map[string]interface{}
-	for _, m := range registryConfig.Mirrors {
-		mirrors = append(mirrors, map[string]interface{}{
-			"remoteURL": m.UpstreamURL,
-			"port":      m.Port,
-		})
-	}
+// InjectConfig injects the rest config to this actuator.
+func (a *actuator) InjectConfig(config *rest.Config) error {
+	a.config = config
+	return nil
+}
 
+// InjectClient injects the controller runtime client into the reconciler.
+func (a *actuator) InjectClient(client client.Client) error {
+	a.client = client
+	return nil
+}
+
+// InjectScheme injects the given scheme into the reconciler.
+func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
+	a.decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
+	return nil
+}
+
+func (a *actuator) createResources(ctx context.Context, registryConfig *service.RegistryConfig, cluster *controller.Cluster, namespace string) error {
 	registryImage, err := imagevector.ImageVector().FindImage("registry")
 	if err != nil {
 		return fmt.Errorf("failed to find registry image: %w", err)
 	}
 
-	values := map[string]interface{}{
-		"mirrors": mirrors,
-		"images": map[string]any{
-			"registry": registryImage.String(),
-		},
+	for _, m := range registryConfig.Mirrors {
+		c := registryCache{
+			Client:                        a.client,
+			Ctx:                           ctx,
+			RemoteURL:                     m.RemoteURL,
+			CacheVolumeSize:               m.CacheSize,
+			CacheGarbageCollectionEnabled: m.CacheGarbageCollectionEnabled,
+			RegistryImage:                 registryImage,
+		}
+
+		resources, err := c.EnsureRegistryCache()
+		if err != nil {
+			return nil
+		}
+
+		// create manageresource from the registryCache
+		err = a.createManagedResources(ctx, c.Name, registryCacheNamespaceName, "", resources, nil)
+		if err != nil {
+			return err
+		}
 	}
 
-	renderer, err := util.NewChartRendererForShoot(cluster.Shoot.Spec.Kubernetes.Version)
-	if err != nil {
-		return fmt.Errorf("could not create chart renderer: %w", err)
-	}
-
-	return a.createManagedResource(ctx, namespace, v1alpha1.RegistryResourceName, "", renderer, v1alpha1.RegistryChartName, metav1.NamespaceSystem, values, nil)
+	return nil
 }
 
 func (a *actuator) deleteResources(ctx context.Context, namespace string) error {
+	a.logger.Info("Deleting managed resource for registry cache", "namespace", namespace)
+
 	if err := managedresources.Delete(ctx, a.client, namespace, v1alpha1.RegistryResourceName, false); err != nil {
 		return err
 	}
@@ -146,13 +161,10 @@ func (a *actuator) deleteResources(ctx context.Context, namespace string) error 
 	return managedresources.WaitUntilDeleted(timeoutCtx, a.client, namespace, v1alpha1.RegistryResourceName)
 }
 
-func (a *actuator) createManagedResource(ctx context.Context, namespace, name, class string, renderer chartrenderer.Interface, chartName, chartNamespace string, chartValues map[string]interface{}, injectedLabels map[string]string) error {
-	chartPath := filepath.Join(charts.ChartsPath, chartName)
-	chart, err := renderer.RenderEmbeddedFS(charts.Internal, chartPath, chartName, chartNamespace, chartValues)
-	if err != nil {
-		return err
-	}
+func (a *actuator) createManagedResources(ctx context.Context, name, namespace, class string, resources map[string][]byte, injectedLabels map[string]string) error {
+	keepObjects := false
+	forceOverwriteAnnotations := false
+	secretsWithPrefix := false
 
-	data := map[string][]byte{chartName: chart.Manifest()}
-	return managedresources.Create(ctx, a.client, namespace, name, false, class, data, pointer.Bool(false), injectedLabels, pointer.Bool(false))
+	return managedresources.Create(ctx, a.client, namespace, name, secretsWithPrefix, class, resources, &keepObjects, injectedLabels, &forceOverwriteAnnotations)
 }

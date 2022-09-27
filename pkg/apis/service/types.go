@@ -12,20 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1alpha1
+package service
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	return RegisterDefaults(scheme)
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// RegistryConfig configuration resource
+type RegistryConfig struct {
+	metav1.TypeMeta
+
+	// Mirrors is a slice of registry mirrors to deploy
+	Mirrors []RegistryMirror
 }
 
-// SetDefaults_RegistryConfig sets the defaults for the Registry Cache configuration
-func SetDefaults_RegistryConfig(obj *RegistryConfig) {
-	for _, mirror := range obj.Mirrors {
-		mirror.CacheGarbageCollectionEnabled = true
-		mirror.CacheSize = "1Gi"
-	}
+// RegistryMirror defines a registry mirror to deploy
+type RegistryMirror struct {
+	// RemoteURL is the remote URL of registry to mirror
+	RemoteURL string
+	// Port is the port on which the registry mirror is going to serve
+	Port int
+	// CacheSize is the size of the registry cache
+	CacheSize string
+	// CacheGarbageCollectionEnabled enables/disables cache garbage collection
+	CacheGarbageCollectionEnabled bool
 }
