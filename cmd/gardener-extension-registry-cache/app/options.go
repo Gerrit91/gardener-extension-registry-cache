@@ -17,10 +17,14 @@ package app
 import (
 	"os"
 
-	RegistryServicecmd "github.com/gerrit91/gardener-extension-registry-cache/pkg/cmd"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"github.com/gardener/gardener/extensions/pkg/controller/controlplane/genericactuator"
+	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
+
+	registryservicecmd "github.com/gerrit91/gardener-extension-registry-cache/pkg/cmd"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
 )
 
 // ExtensionName is the name of the extension.
@@ -29,7 +33,7 @@ const ExtensionName = "extension-registry-cache"
 // Options holds configuration passed to the registry service controller.
 type Options struct {
 	generalOptions     *controllercmd.GeneralOptions
-	registryOptions    *RegistryServicecmd.RegistryOptions
+	registryOptions    *registryservicecmd.RegistryOptions
 	restOptions        *controllercmd.RESTOptions
 	managerOptions     *controllercmd.ManagerOptions
 	controllerOptions  *controllercmd.ControllerOptions
@@ -37,13 +41,14 @@ type Options struct {
 	controllerSwitches *controllercmd.SwitchOptions
 	reconcileOptions   *controllercmd.ReconcilerOptions
 	optionAggregator   controllercmd.OptionAggregator
+	webhookOptions     *webhookcmd.SwitchOptions
 }
 
 // NewOptions creates a new Options instance.
 func NewOptions() *Options {
 	options := &Options{
 		generalOptions:  &controllercmd.GeneralOptions{},
-		registryOptions: &RegistryServicecmd.RegistryOptions{},
+		registryOptions: &registryservicecmd.RegistryOptions{},
 		restOptions:     &controllercmd.RESTOptions{},
 		managerOptions: &controllercmd.ManagerOptions{
 			// These are default values.
@@ -51,6 +56,8 @@ func NewOptions() *Options {
 			LeaderElectionID:           controllercmd.LeaderElectionNameID(ExtensionName),
 			LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
 			LeaderElectionNamespace:    os.Getenv("LEADER_ELECTION_NAMESPACE"),
+			WebhookServerPort:          443,
+			WebhookCertDir:             "/tmp/gardener-extensions-cert",
 		},
 		controllerOptions: &controllercmd.ControllerOptions{
 			// This is a default value.
@@ -60,9 +67,23 @@ func NewOptions() *Options {
 			// This is a default value.
 			MaxConcurrentReconciles: 5,
 		},
-		controllerSwitches: RegistryServicecmd.ControllerSwitches(),
+		controllerSwitches: registryservicecmd.ControllerSwitches(),
+		webhookOptions:     registryservicecmd.WebhookSwitchOptions(),
 		reconcileOptions:   &controllercmd.ReconcilerOptions{},
 	}
+
+	// options for the webhook server
+	webhookServerOptions := &webhookcmd.ServerOptions{
+		Namespace: os.Getenv("WEBHOOK_CONFIG_NAMESPACE"),
+	}
+
+	webhookOptions := webhookcmd.NewAddToManagerOptions(
+		"registry-cache",
+		genericactuator.ShootWebhooksResourceName,
+		genericactuator.ShootWebhookNamespaceSelector(controller.Type),
+		webhookServerOptions,
+		options.webhookOptions,
+	)
 
 	options.optionAggregator = controllercmd.NewOptionAggregator(
 		options.generalOptions,
@@ -73,6 +94,7 @@ func NewOptions() *Options {
 		controllercmd.PrefixOption("healthcheck-", options.healthOptions),
 		options.controllerSwitches,
 		options.reconcileOptions,
+		webhookOptions,
 	)
 
 	return options

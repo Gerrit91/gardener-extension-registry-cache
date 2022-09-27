@@ -24,10 +24,13 @@ import (
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
 	controllerconfig "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/config"
 	healthcheckcontroller "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/healthcheck"
+	controlplanewebhook "github.com/gerrit91/gardener-extension-registry-cache/pkg/webhook/controlplane"
 
 	extensionsapisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	extensionshealthcheckcontroller "github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
+	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
+	extensioncontrolplanewebhook "github.com/gardener/gardener/extensions/pkg/webhook/controlplane"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -100,6 +103,12 @@ func (c *RegistryServiceConfig) Apply(config *controllerconfig.Config) {
 	config.Configuration = c.config
 }
 
+func (c *RegistryServiceConfig) ApplyHealthCheckConfig(config *extensionsapisconfig.HealthCheckConfig) {
+	if c.config.HealthCheckConfig != nil {
+		*config = *c.config.HealthCheckConfig
+	}
+}
+
 // ControllerSwitches are the cmd.SwitchOptions for the provider controllers.
 func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
@@ -108,8 +117,9 @@ func ControllerSwitches() *cmd.SwitchOptions {
 	)
 }
 
-func (c *RegistryServiceConfig) ApplyHealthCheckConfig(config *extensionsapisconfig.HealthCheckConfig) {
-	if c.config.HealthCheckConfig != nil {
-		*config = *c.config.HealthCheckConfig
-	}
+// WebhookSwitchOptions are the webhookcmd.SwitchOptions for the provider webhooks.
+func WebhookSwitchOptions() *webhookcmd.SwitchOptions {
+	return webhookcmd.NewSwitchOptions(
+		webhookcmd.Switch(extensioncontrolplanewebhook.WebhookName, controlplanewebhook.AddToManager),
+	)
 }
