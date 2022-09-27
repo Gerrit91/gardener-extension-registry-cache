@@ -50,7 +50,7 @@ start:
 #################################################################
 
 .PHONY: install
-install: revendor
+install:
 	@LD_FLAGS="-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(VERSION)" \
 	$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install.sh ./...
 

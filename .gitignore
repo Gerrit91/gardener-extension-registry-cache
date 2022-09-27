@@ -20,5 +20,3 @@ TODO
 .fuse_hidden*
 
 .go-version
-
-vendor
