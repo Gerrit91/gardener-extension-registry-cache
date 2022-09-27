@@ -14,6 +14,7 @@
 
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := registry-cache
+ADMISSION_NAME              := $(NAME)-admission
 IMAGE                       := ghcr.io/gerrit91/gardener-extension-registry-cache
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 HACK_DIR                    := $(REPO_ROOT)/hack
@@ -21,6 +22,18 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 LD_FLAGS                    := "-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(IMAGE_TAG)"
 LEADER_ELECTION             := false
 IGNORE_OPERATION_ANNOTATION := true
+
+
+WEBHOOK_CONFIG_PORT	:= 8444
+WEBHOOK_CONFIG_MODE	:= url
+WEBHOOK_CONFIG_URL	:= localhost:${WEBHOOK_CONFIG_PORT}
+WEBHOOK_CERT_DIR    := ./example/admission-certs
+EXTENSION_NAMESPACE	:=
+
+WEBHOOK_PARAM := --webhook-config-url=${WEBHOOK_CONFIG_URL}
+ifeq (${WEBHOOK_CONFIG_MODE}, service)
+  WEBHOOK_PARAM := --webhook-config-namespace=${EXTENSION_NAMESPACE}
+endif
 
 #########################################
 # Tools                                 #
@@ -43,6 +56,29 @@ start:
 		--leader-election=$(LEADER_ELECTION) \
 		--config=./example/00-config.yaml \
 		--gardener-version="v1.39.0"
+
+
+.PHONY: start-admission
+start-admission:
+	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on go run \
+		-mod=vendor \
+		-ldflags ${LD_FLAGS} \
+		./cmd/${EXTENSION_PREFIX}-${ADMISSION_NAME} \
+		--kubeconfig=dev/garden-kubeconfig.yaml \
+		--webhook-config-server-host=0.0.0.0 \
+		--webhook-config-server-port=9443 \
+		--webhook-config-cert-dir=${WEBHOOK_CERT_DIR}
+
+.PHONY: debug-admission
+debug-admission:
+	LEADER_ELECTION_NAMESPACE=garden dlv debug \
+		./cmd/${EXTENSION_PREFIX}-${ADMISSION_NAME} -- \
+		--leader-election=${LEADER_ELECTION} \
+		--kubeconfig=dev/garden-kubeconfig.yaml \
+		--webhook-config-server-host=0.0.0.0 \
+		--webhook-config-server-port=9443 \
+		--health-bind-address=:8085 \
+		--webhook-config-cert-dir=${WEBHOOK_CERT_DIR}
 
 #################################################################
 # Rules related to binary build, Docker image build and release #
