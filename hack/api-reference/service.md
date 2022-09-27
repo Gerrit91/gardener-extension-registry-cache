@@ -42,6 +42,60 @@ string
 </td>
 <td><code>RegistryConfig</code></td>
 </tr>
+<tr>
+<td>
+<code>registries</code></br>
+<em>
+<a href="#service.registry.extensions.gardener.cloud/v1alpha1.RegistryMirror">
+[]RegistryMirror
+</a>
+</em>
+</td>
+<td>
+<p>Mirrors is a slice of registry mirrors to deploy</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="service.registry.extensions.gardener.cloud/v1alpha1.RegistryMirror">RegistryMirror
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#service.registry.extensions.gardener.cloud/v1alpha1.RegistryConfig">RegistryConfig</a>)
+</p>
+<p>
+<p>RegistryMirror defines a registry mirror to deploy</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>remoteURL</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>RemoteURL is the remote URL of registry to mirror</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>port</code></br>
+<em>
+int
+</em>
+</td>
+<td>
+<p>Port is the port on which the registry mirror is going to serve</p>
+</td>
+</tr>
 </tbody>
 </table>
 <hr/>

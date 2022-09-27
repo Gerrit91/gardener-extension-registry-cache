@@ -2,6 +2,12 @@
 gardener-extension-registry-cache
 {{- end -}}
 
+{{- define "config" -}}
+---
+apiVersion: registry-cache.extensions.config.gardener.cloud/v1alpha1
+kind: Configuration
+{{- end }}
+
 {{-  define "image" -}}
   {{- if hasPrefix "sha256:" .Values.image.tag }}
   {{- printf "%s@%s" .Values.image.repository .Values.image.tag }}
