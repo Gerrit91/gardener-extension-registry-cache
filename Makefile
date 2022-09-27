@@ -87,7 +87,7 @@ debug-admission:
 .PHONY: install
 install:
 	@LD_FLAGS="-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(VERSION)" \
-	$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install.sh ./...
+	$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install.sh ./cmd/...
 
 .PHONY: docker-login
 docker-login:
@@ -96,6 +96,7 @@ docker-login:
 .PHONY: docker-images
 docker-images:
 	@docker build -t $(IMAGE):$(VERSION) -t $(IMAGE):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
+	@docker build -t $(IMAGE)/admission:$(VERSION) -t $(IMAGE)/admission:latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME)-admission .
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
@@ -113,7 +114,7 @@ revendor:
 .PHONY: clean
 clean:
 	@$(shell find ./example -type f -name "controller-registration.yaml" -exec rm '{}' \;)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/clean.sh ./cmd/... ./pkg/... ./test/...
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/clean.sh ./cmd/... ./pkg/...
 
 .PHONY: check-generate
 check-generate:
@@ -121,12 +122,13 @@ check-generate:
 
 .PHONY: check
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/...
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-charts.sh ./charts
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(MOCKGEN)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/... ./test/...
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/...
+	$(MAKE) format
 
 .PHONE: generate-in-docker
 generate-in-docker:
@@ -137,7 +139,7 @@ generate-in-docker:
 
 .PHONY: format
 format: $(GOIMPORTS)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg ./test
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg
 
 .PHONY: test
 test:
