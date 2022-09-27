@@ -127,5 +127,8 @@ extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extensi
 extension-up: $(SKAFFOLD) $(HELM)
 	$(SKAFFOLD) run
 
+extension-dev: $(SKAFFOLD) $(HELM)
+	$(SKAFFOLD) dev --cleanup=false --trigger=manual
+
 extension-down: $(SKAFFOLD) $(HELM)
 	$(SKAFFOLD) delete
