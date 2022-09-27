@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // +k8s:deepcopy-gen=package
-// +k8s:conversion-gen=github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service
+// +k8s:conversion-gen=github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service
 // +k8s:openapi-gen=true
 // +k8s:defaulter-gen=TypeMeta
 
@@ -21,4 +21,4 @@
 
 // Package v1alpha1 contains the registry service extension.
 // +groupName=service.registry.extensions.gardener.cloud
-package v1alpha1 // import "github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
+package v1alpha1 // import "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"

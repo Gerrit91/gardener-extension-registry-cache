@@ -17,7 +17,7 @@ package app
 import (
 	"os"
 
-	RegistryServicecmd "github.com/Gerrit91/gardener-extension-registry-cache/pkg/cmd"
+	RegistryServicecmd "github.com/gerrit91/gardener-extension-registry-cache/pkg/cmd"
 
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"

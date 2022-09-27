@@ -1,4 +1,4 @@
-module github.com/Gerrit91/gardener-extension-registry-cache
+module github.com/gerrit91/gardener-extension-registry-cache
 
 go 1.19
 

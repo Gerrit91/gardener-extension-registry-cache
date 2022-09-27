@@ -15,7 +15,7 @@
 package config
 
 import (
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 )
 
 // Config contains configuration for the registry cache service.

@@ -24,7 +24,7 @@ package v1alpha1
 import (
 	unsafe "unsafe"
 
-	service "github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service"
+	service "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )

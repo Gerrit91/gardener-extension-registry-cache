@@ -17,7 +17,7 @@ package main
 import (
 	"os"
 
-	"github.com/Gerrit91/gardener-extension-registry-cache/cmd/gardener-extension-registry-cache/app"
+	"github.com/gerrit91/gardener-extension-registry-cache/cmd/gardener-extension-registry-cache/app"
 
 	"github.com/gardener/gardener/pkg/logger"
 	runtimelog "sigs.k8s.io/controller-runtime/pkg/log"

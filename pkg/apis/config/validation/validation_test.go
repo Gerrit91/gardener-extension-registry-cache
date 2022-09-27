@@ -15,8 +15,8 @@
 package validation_test
 
 import (
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config/validation"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config/validation"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

@@ -24,7 +24,7 @@ package v1alpha1
 import (
 	unsafe "unsafe"
 
-	config "github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config"
+	config "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	configv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	conversion "k8s.io/apimachinery/pkg/conversion"

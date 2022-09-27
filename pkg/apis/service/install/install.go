@@ -15,8 +15,8 @@
 package install
 
 import (
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"

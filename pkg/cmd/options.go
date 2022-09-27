@@ -18,12 +18,12 @@ import (
 	"errors"
 	"os"
 
-	apisconfig "github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config/v1alpha1"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config/validation"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/controller"
-	controllerconfig "github.com/Gerrit91/gardener-extension-registry-cache/pkg/controller/config"
-	healthcheckcontroller "github.com/Gerrit91/gardener-extension-registry-cache/pkg/controller/healthcheck"
+	apisconfig "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config/v1alpha1"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config/validation"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
+	controllerconfig "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/config"
+	healthcheckcontroller "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/healthcheck"
 
 	extensionsapisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"

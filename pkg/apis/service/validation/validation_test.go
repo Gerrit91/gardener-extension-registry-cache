@@ -18,8 +18,8 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service"
-	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/validation"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/validation"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
