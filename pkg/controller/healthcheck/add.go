@@ -57,9 +57,9 @@ func RegisterHealthChecks(mgr manager.Manager, opts healthcheck.DefaultAddArgs) 
 		nil,
 		[]healthcheck.ConditionTypeToHealthCheck{
 			{
-				ConditionType: string(gardencorev1beta1.ShootControlPlaneHealthy),
+				ConditionType: string(gardencorev1beta1.ShootSystemComponentsHealthy),
 				HealthCheck: NewRegistryWrapperHealthChecker(
-					general.CheckManagedResource(registryv1alpha1.RegistryResourceName)),
+					general.CheckManagedResource(registryv1alpha1.RegistryResourceName)), // FIXME: now needs to check individual registry secrets
 				PreCheckFunc: preCheckFunc,
 			},
 		},

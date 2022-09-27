@@ -118,7 +118,7 @@ func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func (a *actuator) createResources(ctx context.Context, registryConfig *service.RegistryConfig, cluster *controller.Cluster, namespace string) error {
+func (a *actuator) createResources(ctx context.Context, registryConfig *service.RegistryConfig, _ *controller.Cluster, namespace string) error {
 	registryImage, err := imagevector.ImageVector().FindImage("registry")
 	if err != nil {
 		return fmt.Errorf("failed to find registry image: %w", err)
@@ -136,11 +136,11 @@ func (a *actuator) createResources(ctx context.Context, registryConfig *service.
 
 		resources, err := c.EnsureRegistryCache()
 		if err != nil {
-			return nil
+			return err
 		}
 
 		// create manageresource from the registryCache
-		err = a.createManagedResources(ctx, c.Name, registryCacheNamespaceName, "", resources, nil)
+		err = a.createManagedResources(ctx, c.Name, namespace, "", resources, nil)
 		if err != nil {
 			return err
 		}
