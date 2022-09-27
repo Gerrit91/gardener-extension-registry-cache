@@ -25,6 +25,7 @@ import (
 	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service"
 	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
 	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/service/validation"
+	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/imagevector"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
@@ -133,8 +134,16 @@ func (a *actuator) createResources(ctx context.Context, registryConfig *service.
 		})
 	}
 
+	registryImage, err := imagevector.ImageVector().FindImage("registry")
+	if err != nil {
+		return fmt.Errorf("failed to find registry image: %w", err)
+	}
+
 	values := map[string]interface{}{
 		"mirrors": mirrors,
+		"images": map[string]any{
+			"registry": registryImage.String(),
+		},
 	}
 
 	renderer, err := util.NewChartRendererForShoot(cluster.Shoot.Spec.Kubernetes.Version)
