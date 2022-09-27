@@ -1,10 +1,12 @@
 image:
-  repository: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
+  repository: ghcr.io/gerrit91/gardener-extension-registry-cache
   tag: latest
   pullPolicy: IfNotPresent
 
 leaderElection:
   resourceLock: leases
+
+replicaCount: 1
 
 resources: {}
 

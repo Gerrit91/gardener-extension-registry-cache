@@ -16,9 +16,11 @@ package cmd
 
 import (
 	"errors"
+	"os"
 
 	apisconfig "github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config/v1alpha1"
+	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/apis/config/validation"
 	"github.com/Gerrit91/gardener-extension-registry-cache/pkg/controller"
 	controllerconfig "github.com/Gerrit91/gardener-extension-registry-cache/pkg/controller/config"
 	healthcheckcontroller "github.com/Gerrit91/gardener-extension-registry-cache/pkg/controller/healthcheck"
@@ -61,24 +63,24 @@ func (o *RegistryOptions) Complete() error {
 	if o.ConfigLocation == "" {
 		return errors.New("config location is not set")
 	}
-	// data, err := ioutil.ReadFile(o.ConfigLocation)
-	// if err != nil {
-	// 	return err
-	// }
+	data, err := os.ReadFile(o.ConfigLocation)
+	if err != nil {
+		return err
+	}
 
-	// config := apisconfig.Configuration{}
-	// _, _, err = decoder.Decode(data, nil, &config)
-	// if err != nil {
-	// 	return err
-	// }
+	config := apisconfig.Configuration{}
+	_, _, err = decoder.Decode(data, nil, &config)
+	if err != nil {
+		return err
+	}
 
-	// if errs := validation.ValidateConfiguration(&config); len(errs) > 0 {
-	// 	return errs.ToAggregate()
-	// }
+	if errs := validation.ValidateConfiguration(&config); len(errs) > 0 {
+		return errs.ToAggregate()
+	}
 
-	// o.config = &RegistryServiceConfig{
-	// 	config: config,
-	// }
+	o.config = &RegistryServiceConfig{
+		config: config,
+	}
 
 	return nil
 }
