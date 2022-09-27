@@ -17,6 +17,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"time"
 
@@ -72,21 +73,21 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
-	RegistryConfig := &service.RegistryConfig{}
+	registryConfig := &service.RegistryConfig{}
 	if ex.Spec.ProviderConfig != nil {
-		if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, RegistryConfig); err != nil {
+		if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, registryConfig); err != nil {
 			return fmt.Errorf("failed to decode provider config: %w", err)
 		}
-		if errs := validation.ValidateRegistryConfig(RegistryConfig, cluster); len(errs) > 0 {
+		if errs := validation.ValidateRegistryConfig(registryConfig, cluster); len(errs) > 0 {
 			return errs.ToAggregate()
 		}
 	}
 
-	if err := a.createResources(ctx, RegistryConfig, cluster, namespace); err != nil {
+	if err := a.createResources(ctx, registryConfig, cluster, namespace); err != nil {
 		return err
 	}
 
-	return a.updateStatus(ctx, ex, RegistryConfig)
+	return a.updateStatus(ctx, ex, registryConfig)
 }
 
 // Delete the Extension resource.
@@ -128,9 +129,15 @@ func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
 func (a *actuator) createResources(ctx context.Context, registryConfig *service.RegistryConfig, cluster *controller.Cluster, namespace string) error {
 	var mirrors []map[string]interface{}
 	for _, m := range registryConfig.Mirrors {
+		u, err := url.Parse(m.RemoteURL)
+		if err != nil {
+			return err
+		}
+
 		mirrors = append(mirrors, map[string]interface{}{
-			"remoteURL": m.RemoteURL,
-			"port":      m.Port,
+			"remoteURL":  m.RemoteURL,
+			"port":       m.Port,
+			"mirrorHost": u.Host,
 		})
 	}
 
@@ -179,7 +186,7 @@ func (a *actuator) createManagedResource(ctx context.Context, namespace, name, c
 	return managedresources.Create(ctx, a.client, namespace, name, false, class, data, &keepObjects, injectedLabels, &forceOverwriteAnnotations)
 }
 
-func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, RegistryConfig *service.RegistryConfig) error {
+func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, _ *service.RegistryConfig) error {
 	patch := client.MergeFrom(ex.DeepCopy())
 	// ex.Status.Resources = resources
 	return a.client.Status().Patch(ctx, ex, patch)

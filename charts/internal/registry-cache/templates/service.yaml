@@ -5,6 +5,9 @@ kind: Service
 metadata:
   name: {{ include "registry-cache.fullname" $ }}-{{ $i }}
   namespace: {{ $.Release.Namespace }}
+  labels:
+    registry-cache: mirror
+    mirror-host: {{ $v.mirrorHost }}
 spec:
   selector:
     app: {{ include "registry-cache.fullname" $ }}-{{ $i }}

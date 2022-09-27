@@ -16,10 +16,20 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/gardener/gardener/extensions/pkg/apis/config"
+	"github.com/gardener/gardener/extensions/pkg/util"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
+	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/go-logr/logr"
 	"k8s.io/utils/pointer"
@@ -35,34 +45,78 @@ func NewEnsurer(logger logr.Logger) genericmutator.Ensurer {
 type ensurer struct {
 	genericmutator.NoopEnsurer
 	logger logr.Logger
+	client client.Client
+}
+
+// InjectClient injects the given client into the ensurer.
+func (e *ensurer) InjectClient(client client.Client) error {
+	e.client = client
+	return nil
 }
 
 // EnsureAdditionalFiles ensures that additional required system files are added.
-func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
+func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
+	cluster, err := gctx.GetCluster(ctx)
+	if err != nil {
+		return err
+	}
+
+	ex := &extensionsv1alpha1.Extension{}
+	if err := e.client.Get(ctx, kutil.Key(cluster.ObjectMeta.Name, cluster.Shoot.Name), ex); err != nil {
+		logger.Error(err, "could not read extension from shoot namespace", "cluster name", cluster.ObjectMeta.Name)
+		return err
+	}
+
+	if ex.Status.LastOperation == nil || ex.Status.LastOperation.State != v1beta1.LastOperationStateSucceeded {
+		return fmt.Errorf("registry extension has not yet succeeded")
+	}
+
+	_, shootClient, err := util.NewClientForShoot(ctx, e.client, cluster.ObjectMeta.Name, client.Options{}, config.RESTOptions{})
+	if err != nil {
+		return err
+	}
+
+	selector := labels.NewSelector()
+	r, err := labels.NewRequirement("registry-cache", selection.In, []string{"mirror"})
+	if err != nil {
+		return err
+	}
+	selector = selector.Add(*r)
+
+	services := &corev1.ServiceList{}
+	if err := shootClient.List(ctx, services, &client.ListOptions{
+		LabelSelector: selector,
+	}); err != nil {
+		logger.Error(err, "could not read extension from shoot namespace", "cluster name", cluster.ObjectMeta.Name)
+		return err
+	}
+
+	if len(services.Items) == 0 {
+		logger.Info("no registry cache services found", "cluster name", cluster.ObjectMeta.Name)
+		return err
+	}
+
+	var lines []string
+	for _, svc := range services.Items {
+		mirrorHost, ok := svc.Labels["mirror-host"]
+		if !ok {
+			return fmt.Errorf("service is missing mirror-host annotation")
+		}
+
+		lines = append(lines, fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%[1]s:%[3]d"]\n  endpoint = ["http://%[2]s:%[3]d"]`, mirrorHost, svc.Spec.ClusterIP, svc.Spec.Ports[0].Port))
+	}
+
 	appendUniqueFile(new, extensionsv1alpha1.File{
-		Path:        "/etc/containerd/conf.d/registry-mirror.toml",
+		Path:        "/etc/containerd/conf.d/registry-mirrors.toml",
 		Permissions: pointer.Int32(0644),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Encoding: "",
-				Data: `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5001"]
-  endpoint = ["http://gardener-local-control-plane:5001"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://gardener-local-control-plane:5002"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io"]
-  endpoint = ["http://gardener-local-control-plane:5003"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."eu.gcr.io"]
-  endpoint = ["http://gardener-local-control-plane:5004"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."ghcr.io"]
-  endpoint = ["http://gardener-local-control-plane:5005"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry.k8s.io"]
-  endpoint = ["http://gardener-local-control-plane:5006"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."quay.io"]
-  endpoint = ["http://gardener-local-control-plane:5007"]
-`,
+				Data:     strings.Join(lines, "\n"),
 			},
 		},
 	})
+
 	return nil
 }
 

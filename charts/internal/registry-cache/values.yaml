@@ -1,6 +1,7 @@
 mirrors:
 - remoteURL: https://registry-1.docker.io
   port: 5000
+  mirror-host: docker.io
 
 nameOverride: ""
 fullnameOverride: registry-cache
