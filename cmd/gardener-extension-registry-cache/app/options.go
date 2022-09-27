@@ -41,11 +41,26 @@ type Options struct {
 	controllerSwitches *controllercmd.SwitchOptions
 	reconcileOptions   *controllercmd.ReconcilerOptions
 	optionAggregator   controllercmd.OptionAggregator
-	webhookOptions     *webhookcmd.SwitchOptions
+	webhookOptions     *webhookcmd.AddToManagerOptions
 }
 
 // NewOptions creates a new Options instance.
 func NewOptions() *Options {
+	webhookSwitchOptions := registryservicecmd.WebhookSwitchOptions()
+
+	// options for the webhook server
+	webhookServerOptions := &webhookcmd.ServerOptions{
+		Namespace: os.Getenv("WEBHOOK_CONFIG_NAMESPACE"),
+	}
+
+	webhookOptions := webhookcmd.NewAddToManagerOptions(
+		"registry-cache",
+		genericactuator.ShootWebhooksResourceName,
+		genericactuator.ShootWebhookNamespaceSelector(controller.Type),
+		webhookServerOptions,
+		webhookSwitchOptions,
+	)
+
 	options := &Options{
 		generalOptions:  &controllercmd.GeneralOptions{},
 		registryOptions: &registryservicecmd.RegistryOptions{},
@@ -68,22 +83,9 @@ func NewOptions() *Options {
 			MaxConcurrentReconciles: 5,
 		},
 		controllerSwitches: registryservicecmd.ControllerSwitches(),
-		webhookOptions:     registryservicecmd.WebhookSwitchOptions(),
+		webhookOptions:     webhookOptions,
 		reconcileOptions:   &controllercmd.ReconcilerOptions{},
 	}
-
-	// options for the webhook server
-	webhookServerOptions := &webhookcmd.ServerOptions{
-		Namespace: os.Getenv("WEBHOOK_CONFIG_NAMESPACE"),
-	}
-
-	webhookOptions := webhookcmd.NewAddToManagerOptions(
-		"registry-cache",
-		genericactuator.ShootWebhooksResourceName,
-		genericactuator.ShootWebhookNamespaceSelector(controller.Type),
-		webhookServerOptions,
-		options.webhookOptions,
-	)
 
 	options.optionAggregator = controllercmd.NewOptionAggregator(
 		options.generalOptions,
@@ -94,7 +96,7 @@ func NewOptions() *Options {
 		controllercmd.PrefixOption("healthcheck-", options.healthOptions),
 		options.controllerSwitches,
 		options.reconcileOptions,
-		webhookOptions,
+		webhookSwitchOptions,
 	)
 
 	return options

@@ -124,11 +124,11 @@ verify-extended: check-generate check format test-cov test-clean
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
 extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
-extension-up: $(SKAFFOLD) $(HELM)
+extension-up: $(SKAFFOLD) $(HELM) $(KIND) $(KUBECTL)
 	$(SKAFFOLD) run
 
-extension-dev: $(SKAFFOLD) $(HELM)
+extension-dev: $(SKAFFOLD) $(HELM) $(KIND) $(KUBECTL)
 	$(SKAFFOLD) dev --cleanup=false --trigger=manual
 
-extension-down: $(SKAFFOLD) $(HELM)
+extension-down: $(SKAFFOLD) $(HELM) $(KIND) $(KUBECTL)
 	$(SKAFFOLD) delete

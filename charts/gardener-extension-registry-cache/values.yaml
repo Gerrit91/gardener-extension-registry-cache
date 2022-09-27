@@ -25,11 +25,12 @@ controllers:
   healthcheck:
     concurrentSyncs: 5
 
-registryConfig:
-  registries:
-    - ...
+webhookConfig:
+  servicePort: 443
+  serverPort: 10250
 
 disableControllers: []
+disableWebhooks: []
 
 # imageVectorOverwrite: |
 #   images:
