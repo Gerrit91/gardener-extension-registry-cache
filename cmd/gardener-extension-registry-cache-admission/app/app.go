@@ -19,12 +19,12 @@ import (
 	"fmt"
 
 	admissioncmd "github.com/gerrit91/gardener-extension-registry-cache/pkg/admission/cmd"
-	rcinstall "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/install"
+	registryinstall "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/install"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
 
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
-	"github.com/gardener/gardener/pkg/apis/core/install"
+	coreinstall "github.com/gardener/gardener/pkg/apis/core/install"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	"github.com/spf13/cobra"
 	"k8s.io/component-base/version/verflag"
@@ -56,7 +56,7 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use: fmt.Sprintf("gardener-extension-%s-admission", controller.Type ),
+		Use: fmt.Sprintf("gardener-extension-%s-admission", controller.Type),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			verflag.PrintAndExitIfRequested()
@@ -70,8 +70,8 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 				return fmt.Errorf("could not instantiate manager: %w", err)
 			}
 
-			install.Install(mgr.GetScheme())
-			rcinstall.Install(mgr.GetScheme())
+			coreinstall.Install(mgr.GetScheme())
+			registryinstall.Install(mgr.GetScheme())
 
 			log.Info("Setting up webhook server")
 			if err := webhookOptions.Completed().AddToManager(mgr); err != nil {

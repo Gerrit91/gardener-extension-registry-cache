@@ -15,14 +15,15 @@
 package validator
 
 import (
-	api "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	api "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
 )
 
 func decodeRegistryConfig(decoder runtime.Decoder, config *runtime.RawExtension, fldPath *field.Path) (*api.RegistryConfig, error) {
 	if config == nil {
-		return nil, field.Required(fldPath, "Registry configuration is required when using the gardener-extension-registry-cache" )
+		return nil, field.Required(fldPath, "Registry configuration is required when using the gardener-extension-registry-cache")
 	}
 
 	registryConfig := &api.RegistryConfig{}
@@ -32,4 +33,3 @@ func decodeRegistryConfig(decoder runtime.Decoder, config *runtime.RawExtension,
 
 	return registryConfig, nil
 }
-

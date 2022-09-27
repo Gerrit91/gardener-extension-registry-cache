@@ -1,18 +1,16 @@
 <p>Packages:</p>
 <ul>
 <li>
-<a href="#registry-cache.extensions.config.gardener.cloud%2fv1alpha1">registry-cache.extensions.config.gardener.cloud/v1alpha1</a>
+<a href="#config.registry.extensions.gardener.cloud%2fv1alpha1">config.registry.extensions.gardener.cloud/v1alpha1</a>
 </li>
 </ul>
-<h2 id="registry-cache.extensions.config.gardener.cloud/v1alpha1">registry-cache.extensions.config.gardener.cloud/v1alpha1</h2>
+<h2 id="config.registry.extensions.gardener.cloud/v1alpha1">config.registry.extensions.gardener.cloud/v1alpha1</h2>
 <p>
 <p>Package v1alpha1 contains the Registry Cache Service extension configuration.</p>
 </p>
 Resource Types:
-<ul><li>
-<a href="#registry-cache.extensions.config.gardener.cloud/v1alpha1.Configuration">Configuration</a>
-</li></ul>
-<h3 id="registry-cache.extensions.config.gardener.cloud/v1alpha1.Configuration">Configuration
+<ul></ul>
+<h3 id="config.registry.extensions.gardener.cloud/v1alpha1.Configuration">Configuration
 </h3>
 <p>
 <p>Configuration contains information about the registry service configuration.</p>
@@ -25,23 +23,6 @@ Resource Types:
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>
-<code>apiVersion</code></br>
-string</td>
-<td>
-<code>
-registry-cache.extensions.config.gardener.cloud/v1alpha1
-</code>
-</td>
-</tr>
-<tr>
-<td>
-<code>kind</code></br>
-string
-</td>
-<td><code>Configuration</code></td>
-</tr>
 <tr>
 <td>
 <code>healthCheckConfig</code></br>

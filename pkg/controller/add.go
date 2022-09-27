@@ -15,18 +15,18 @@
 package controller
 
 import (
-	controllerconfig "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/config"
-
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 )
 
 const (
 	// Type is the type of Extension resource.
 	Type = "registry-cache"
 	// ControllerName is the name of the registry cache service controller.
-	ControllerName = "registry_cache_service"
+	ControllerName = "registry-cache"
 	// FinalizerSuffix is the finalizer suffix for the registry cache service controller.
 	FinalizerSuffix = "registry-cache"
 )
@@ -40,8 +40,8 @@ var (
 type AddOptions struct {
 	// ControllerOptions contains options for the controller.
 	ControllerOptions controller.Options
-	// ServiceConfig contains configuration for the registry cache service.
-	ServiceConfig controllerconfig.Config
+	// Config contains configuration for the registry cache service.
+	Config config.Configuration
 	// IgnoreOperationAnnotation specifies whether to ignore the operation annotation or not.
 	IgnoreOperationAnnotation bool
 }
@@ -55,7 +55,7 @@ func AddToManager(mgr manager.Manager) error {
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(mgr manager.Manager, opts AddOptions) error {
 	return extension.Add(mgr, extension.AddArgs{
-		Actuator:          NewActuator(opts.ServiceConfig.Configuration),
+		Actuator:          NewActuator(opts.Config),
 		ControllerOptions: opts.ControllerOptions,
 		Name:              ControllerName,
 		FinalizerSuffix:   FinalizerSuffix,

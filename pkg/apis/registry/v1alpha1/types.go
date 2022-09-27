@@ -15,18 +15,29 @@
 package v1alpha1
 
 import (
-	configv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// RegistryResourceName is the name for registry resources in the shoot.
+const RegistryResourceName = "extension-registry-cache"
+
+// RegistryChartNameSeed is the name of the chart for registry in the seed.
+const RegistryChartName = "registry-cache"
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Configuration contains information about the registry service configuration.
-type Configuration struct {
+// RegistryConfig configuration resource
+type RegistryConfig struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// HealthCheckConfig is the config for the health check controller.
-	// +optional
-	HealthCheckConfig *configv1alpha1.HealthCheckConfig `json:"healthCheckConfig,omitempty"`
+	// Mirrors is a slice of registry mirrors to deploy
+	Mirrors []RegistryMirror `json:"mirrors"`
+}
+
+// RegistryMirror defines a registry mirror to deploy
+type RegistryMirror struct {
+	// UpstreamURL is the remote URL of registry to mirror
+	UpstreamURL string `json:"upstreamURL"`
+	// Port is the port on which the registry mirror is going to serve
+	Port int32 `json:"port"`
 }

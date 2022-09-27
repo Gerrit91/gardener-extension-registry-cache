@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // +k8s:deepcopy-gen=package
-// +groupName=config.registry.extensions.gardener.cloud
+// +groupName="registry.extensions.gardener.cloud"
 
-package config
+//go:generate ../../../hack/update-codegen.sh
+
+package registry // import "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"

@@ -20,18 +20,19 @@ import (
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
-	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
-	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/validation"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/validation"
+	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
 )
 
 // shoot validates shoots
 type shoot struct {
-	client         client.Client
-	decoder        runtime.Decoder
+	client  client.Client
+	decoder runtime.Decoder
 }
 
 // NewShootValidator returns a new instance of a shoot validator.
@@ -65,7 +66,7 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 			ext = ex.DeepCopy()
 			fldPath = field.NewPath("spec", "extensions").Index(i)
 			break
-		} 
+		}
 	}
 	if ext == nil {
 		return nil
@@ -81,4 +82,3 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 	return validation.ValidateRegistryConfig(registryConfig, providerConfigPath).ToAggregate()
 
 }
-

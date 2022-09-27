@@ -12,13 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +k8s:deepcopy-gen=package
-// +k8s:conversion-gen=github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config
-// +k8s:defaulter-gen=TypeMeta
-// +k8s:openapi-gen=true
+package registry
 
-//go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/config.json -template-dir ../../../../vendor/github.com/gardener/gardener/hack/api-reference/template -out-file ../../../../hack/api-reference/config.md
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
-// Package v1alpha1 contains the Registry Cache Service extension configuration.
-// +groupName=config.registry.extensions.gardener.cloud
-package v1alpha1
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// RegistryConfig configuration resource
+type RegistryConfig struct {
+	metav1.TypeMeta
+
+	// Mirrors is a slice of registry mirrors to deploy
+	Mirrors []RegistryMirror
+}
+
+// RegistryMirror defines a registry mirror to deploy
+type RegistryMirror struct {
+	// UpstreamURL is the remote URL of registry to mirror
+	UpstreamURL string
+	// Port is the port on which the registry mirror is going to serve
+	Port int32
+}

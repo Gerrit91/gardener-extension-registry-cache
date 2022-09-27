@@ -18,11 +18,10 @@ import (
 	"errors"
 	"os"
 
-	apisconfig "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
+	configapi "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config/v1alpha1"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config/validation"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
-	controllerconfig "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/config"
 	healthcheckcontroller "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/healthcheck"
 
 	extensionsapisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
@@ -41,7 +40,7 @@ var (
 
 func init() {
 	scheme = runtime.NewScheme()
-	utilruntime.Must(apisconfig.AddToScheme(scheme))
+	utilruntime.Must(configapi.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 
 	decoder = serializer.NewCodecFactory(scheme).UniversalDecoder()
@@ -68,7 +67,7 @@ func (o *RegistryOptions) Complete() error {
 		return err
 	}
 
-	config := apisconfig.Configuration{}
+	config := configapi.Configuration{}
 	_, _, err = decoder.Decode(data, nil, &config)
 	if err != nil {
 		return err
@@ -92,12 +91,12 @@ func (o *RegistryOptions) Completed() *RegistryServiceConfig {
 
 // RegistryServiceConfig contains configuration information about the registry service.
 type RegistryServiceConfig struct {
-	config apisconfig.Configuration
+	config configapi.Configuration
 }
 
 // Apply applies the RegistryOptions to the passed ControllerOptions instance.
-func (c *RegistryServiceConfig) Apply(config *controllerconfig.Config) {
-	config.Configuration = c.config
+func (c *RegistryServiceConfig) Apply(config *configapi.Configuration) {
+	*config = c.config
 }
 
 // ControllerSwitches are the cmd.SwitchOptions for the provider controllers.
