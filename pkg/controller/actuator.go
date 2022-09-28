@@ -19,18 +19,28 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/imagevector"
+	corev1 "k8s.io/api/core/v1"
 
+	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
+	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+
+	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -118,32 +128,112 @@ func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func (a *actuator) createResources(ctx context.Context, registryConfig *service.RegistryConfig, _ *controller.Cluster, namespace string) error {
+func (a *actuator) createResources(ctx context.Context, registryConfig *service.RegistryConfig, cluster *controller.Cluster, namespace string) error {
 	registryImage, err := imagevector.ImageVector().FindImage("registry")
 	if err != nil {
 		return fmt.Errorf("failed to find registry image: %w", err)
 	}
+	ensurerImage, err := imagevector.ImageVector().FindImage("cri-config-ensurer")
+	if err != nil {
+		return fmt.Errorf("failed to find ensurer image: %w", err)
+	}
+
+	objects := []client.Object{
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: registryCacheNamespaceName,
+			},
+		},
+	}
 
 	for _, m := range registryConfig.Mirrors {
 		c := registryCache{
-			Client:                        a.client,
-			Ctx:                           ctx,
+			Namespace:                     registryCacheNamespaceName,
 			RemoteURL:                     m.RemoteURL,
 			CacheVolumeSize:               m.CacheSize,
 			CacheGarbageCollectionEnabled: m.CacheGarbageCollectionEnabled,
 			RegistryImage:                 registryImage,
 		}
 
-		resources, err := c.EnsureRegistryCache()
+		os, err := c.Ensure()
 		if err != nil {
 			return err
 		}
 
-		// create manageresource from the registryCache
-		err = a.createManagedResources(ctx, c.Name, namespace, "", resources, nil)
-		if err != nil {
+		objects = append(objects, os...)
+	}
+
+	resources, err := managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer).AddAllAndSerialize(objects...)
+	if err != nil {
+		return err
+	}
+
+	// create manageresource for the registryCache
+	err = a.createManagedResources(ctx, v1alpha1.RegistryResourceName, namespace, "", resources, nil)
+	if err != nil {
+		return err
+	}
+
+	_, shootClient, err := util.NewClientForShoot(ctx, a.client, cluster.ObjectMeta.Name, client.Options{}, extensionsconfig.RESTOptions{})
+	if err != nil {
+		return fmt.Errorf("shoot client cannot be crated: %w", err)
+	}
+
+	var criMirrors map[string]string
+	selector := labels.NewSelector()
+	r, err := labels.NewRequirement(registryCacheServiceMirrorHostLabel, selection.Exists, nil)
+	if err != nil {
+		return err
+	}
+	selector = selector.Add(*r)
+
+	err = retry.Do(func() error {
+		services := &corev1.ServiceList{}
+		if err := shootClient.List(ctx, services, &client.ListOptions{
+			Namespace:     registryCacheNamespaceName,
+			LabelSelector: selector,
+		}); err != nil {
+			a.logger.Error(err, "could not read extension from shoot namespace", "cluster name", cluster.ObjectMeta.Name)
 			return err
 		}
+
+		if len(services.Items) != len(registryConfig.Mirrors) {
+			a.logger.Info("not all services for all configured mirrors exist", "cluster name", cluster.ObjectMeta.Name)
+			return err
+		}
+
+		criMirrors = map[string]string{}
+
+		for i := range services.Items {
+			svc := services.Items[i]
+			criMirrors[svc.Labels["mirror-host"]] = fmt.Sprintf("%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port)
+		}
+
+		return nil
+	}, retry.Context(ctx), retry.LastErrorOnly(true))
+	if err != nil {
+		return err
+	}
+
+	e := criEnsurer{
+		Name:            criEnsurerName,
+		Namespace:       registryCacheNamespaceName,
+		CRIEnsurerImage: ensurerImage,
+		RegistryMirrors: criMirrors,
+	}
+
+	os := e.Ensure()
+	objects = []client.Object{}
+	objects = append(objects, os...)
+
+	resources, err = managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer).AddAllAndSerialize(objects...)
+	if err != nil {
+		return err
+	}
+
+	err = a.createManagedResources(ctx, v1alpha1.RegistryEnsurerResourceName, namespace, "", resources, nil)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -167,4 +257,10 @@ func (a *actuator) createManagedResources(ctx context.Context, name, namespace, 
 	secretsWithPrefix := false
 
 	return managedresources.Create(ctx, a.client, namespace, name, secretsWithPrefix, class, resources, &keepObjects, injectedLabels, &forceOverwriteAnnotations)
+}
+
+func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, _ *service.RegistryConfig) error {
+	patch := client.MergeFrom(ex.DeepCopy())
+	// ex.Status.Resources = resources
+	return a.client.Status().Patch(ctx, ex, patch)
 }

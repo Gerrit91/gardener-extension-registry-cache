@@ -21,6 +21,9 @@ import (
 // RegistryResourceName is the name for registry resources in the shoot.
 const RegistryResourceName = "extension-registry-cache"
 
+// RegistryEnsurerResourceName is the name for registry cri ensurer resources in the shoot.
+const RegistryEnsurerResourceName = "extension-registry-cache-cri-ensurer"
+
 // RegistryChartNameSeed is the name of the chart for registry in the seed.
 const RegistryChartName = "registry-cache"
 

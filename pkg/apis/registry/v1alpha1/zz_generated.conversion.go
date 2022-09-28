@@ -82,6 +82,8 @@ func Convert_registry_RegistryConfig_To_v1alpha1_RegistryConfig(in *registry.Reg
 func autoConvert_v1alpha1_RegistryMirror_To_registry_RegistryMirror(in *RegistryMirror, out *registry.RegistryMirror, s conversion.Scope) error {
 	out.UpstreamURL = in.UpstreamURL
 	out.Port = in.Port
+	out.CacheSize = (*string)(unsafe.Pointer(in.CacheSize))
+	out.CacheGarbageCollectionEnabled = (*bool)(unsafe.Pointer(in.CacheGarbageCollectionEnabled))
 	return nil
 }
 
@@ -93,6 +95,8 @@ func Convert_v1alpha1_RegistryMirror_To_registry_RegistryMirror(in *RegistryMirr
 func autoConvert_registry_RegistryMirror_To_v1alpha1_RegistryMirror(in *registry.RegistryMirror, out *RegistryMirror, s conversion.Scope) error {
 	out.UpstreamURL = in.UpstreamURL
 	out.Port = in.Port
+	out.CacheSize = (*string)(unsafe.Pointer(in.CacheSize))
+	out.CacheGarbageCollectionEnabled = (*bool)(unsafe.Pointer(in.CacheGarbageCollectionEnabled))
 	return nil
 }
 

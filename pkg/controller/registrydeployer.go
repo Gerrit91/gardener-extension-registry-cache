@@ -15,14 +15,12 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 
-	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/imagevector"
-	"github.com/gardener/gardener/pkg/utils/managedresources"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -34,11 +32,10 @@ import (
 )
 
 type registryCache struct {
-	Client client.Client
-	Ctx    context.Context
-	Labels map[string]string
+	Name      string
+	Namespace string
+	Labels    map[string]string
 
-	Name                          string
 	RemoteURL                     string
 	CacheVolumeSize               *string
 	CacheGarbageCollectionEnabled *bool
@@ -54,9 +51,11 @@ const (
 
 	environmentVarialbleNameRegistryURL    = "REGISTRY_PROXY_REMOTEURL"
 	environmentVarialbleNameRegistryDelete = "REGISTRY_STORAGE_DELETE_ENABLED"
+
+	registryCacheServiceMirrorHostLabel = "mirror-host"
 )
 
-func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
+func (c *registryCache) Ensure() ([]client.Object, error) {
 	u, err := url.Parse(c.RemoteURL)
 	if err != nil {
 		return nil, err
@@ -76,24 +75,18 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 		}
 	}
 
+	c.Labels[registryCacheServiceMirrorHostLabel] = u.Host
+
 	volumeSize, err := resource.ParseQuantity(*c.CacheVolumeSize)
 	if err != nil {
 		return nil, err
 	}
 
 	var (
-		registry = managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer)
-
-		namespace = &v1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: registryCacheNamespaceName,
-			},
-		}
-
 		service = &v1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      c.Name,
-				Namespace: namespace.Name,
+				Namespace: registryCacheNamespaceName,
 				Labels:    c.Labels,
 			},
 			Spec: v1.ServiceSpec{
@@ -111,7 +104,7 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 		statefulset = &appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      c.Name,
-				Namespace: namespace.Name,
+				Namespace: registryCacheNamespaceName,
 				Labels:    c.Labels,
 			},
 			Spec: appsv1.StatefulSetSpec{
@@ -128,7 +121,7 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 						Containers: []v1.Container{
 							{
 								Name:            registryCacheInternalName,
-								Image:           c.RegistryImage.Name,
+								Image:           c.RegistryImage.Repository,
 								ImagePullPolicy: v1.PullIfNotPresent,
 								Ports: []v1.ContainerPort{
 									{
@@ -143,7 +136,7 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 									},
 									{
 										Name:  environmentVarialbleNameRegistryDelete,
-										Value: stringFromBool(*c.CacheGarbageCollectionEnabled),
+										Value: strconv.FormatBool(*c.CacheGarbageCollectionEnabled),
 									},
 								},
 								VolumeMounts: []v1.VolumeMount{
@@ -177,16 +170,8 @@ func (c *registryCache) EnsureRegistryCache() (map[string][]byte, error) {
 		}
 	)
 
-	return registry.AddAllAndSerialize(
-		namespace,
+	return []client.Object{
 		service,
 		statefulset,
-	)
-}
-
-func stringFromBool(b bool) string {
-	if b {
-		return "true"
-	}
-	return "false"
+	}, nil
 }
