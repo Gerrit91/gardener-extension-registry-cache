@@ -40,7 +40,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -88,7 +87,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		}
 	}
 
-	if err := a.createResources(ctx, registryConfig, cluster, namespace); err != nil {
+	if err := a.createResources(ctx, log, registryConfig, cluster, namespace); err != nil {
 		return err
 	}
 
@@ -97,7 +96,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 
 // Delete the Extension resource.
 func (a *actuator) Delete(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
-	return a.deleteResources(ctx, ex.GetNamespace())
+	return a.deleteResources(ctx, log, ex.GetNamespace())
 }
 
 // Restore the Extension resource.
@@ -110,25 +109,7 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	return nil
 }
 
-// InjectConfig injects the rest config to this actuator.
-func (a *actuator) InjectConfig(config *rest.Config) error {
-	a.config = config
-	return nil
-}
-
-// InjectClient injects the controller runtime client into the reconciler.
-func (a *actuator) InjectClient(client client.Client) error {
-	a.client = client
-	return nil
-}
-
-// InjectScheme injects the given scheme into the reconciler.
-func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
-	a.decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
-	return nil
-}
-
-func (a *actuator) createResources(ctx context.Context, registryConfig *service.RegistryConfig, cluster *controller.Cluster, namespace string) error {
+func (a *actuator) createResources(ctx context.Context, log logr.Logger, registryConfig *registry.RegistryConfig, cluster *controller.Cluster, namespace string) error {
 	registryImage, err := imagevector.ImageVector().FindImage("registry")
 	if err != nil {
 		return fmt.Errorf("failed to find registry image: %w", err)
@@ -149,7 +130,7 @@ func (a *actuator) createResources(ctx context.Context, registryConfig *service.
 	for _, m := range registryConfig.Mirrors {
 		c := registryCache{
 			Namespace:                     registryCacheNamespaceName,
-			RemoteURL:                     m.RemoteURL,
+			RemoteURL:                     m.UpstreamURL,
 			CacheVolumeSize:               m.CacheSize,
 			CacheGarbageCollectionEnabled: m.CacheGarbageCollectionEnabled,
 			RegistryImage:                 registryImage,
@@ -193,12 +174,12 @@ func (a *actuator) createResources(ctx context.Context, registryConfig *service.
 			Namespace:     registryCacheNamespaceName,
 			LabelSelector: selector,
 		}); err != nil {
-			a.logger.Error(err, "could not read extension from shoot namespace", "cluster name", cluster.ObjectMeta.Name)
+			log.Error(err, "could not read extension from shoot namespace")
 			return err
 		}
 
 		if len(services.Items) != len(registryConfig.Mirrors) {
-			a.logger.Info("not all services for all configured mirrors exist", "cluster name", cluster.ObjectMeta.Name)
+			log.Info("not all services for all configured mirrors exist")
 			return err
 		}
 
@@ -239,8 +220,8 @@ func (a *actuator) createResources(ctx context.Context, registryConfig *service.
 	return nil
 }
 
-func (a *actuator) deleteResources(ctx context.Context, namespace string) error {
-	a.logger.Info("Deleting managed resource for registry cache", "namespace", namespace)
+func (a *actuator) deleteResources(ctx context.Context, log logr.Logger, namespace string) error {
+	log.Info("deleting managed resource for registry cache")
 
 	if err := managedresources.Delete(ctx, a.client, namespace, v1alpha1.RegistryResourceName, false); err != nil {
 		return err
@@ -259,7 +240,7 @@ func (a *actuator) createManagedResources(ctx context.Context, name, namespace, 
 	return managedresources.Create(ctx, a.client, namespace, name, secretsWithPrefix, class, resources, &keepObjects, injectedLabels, &forceOverwriteAnnotations)
 }
 
-func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, _ *service.RegistryConfig) error {
+func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, _ *registry.RegistryConfig) error {
 	patch := client.MergeFrom(ex.DeepCopy())
 	// ex.Status.Resources = resources
 	return a.client.Status().Patch(ctx, ex, patch)

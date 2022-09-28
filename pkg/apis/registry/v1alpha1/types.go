@@ -21,8 +21,8 @@ import (
 // RegistryResourceName is the name for registry resources in the shoot.
 const RegistryResourceName = "extension-registry-cache"
 
-// RegistryChartName is the name of the chart for registry in the seed.
-const RegistryChartName = "registry-cache"
+// RegistryEnsurerResourceName is the name for registry cri ensurer resources in the shoot.
+const RegistryEnsurerResourceName = "extension-registry-cache-cri-ensurer"
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -40,4 +40,10 @@ type RegistryMirror struct {
 	UpstreamURL string `json:"upstreamURL"`
 	// Port is the port on which the registry mirror is going to serve
 	Port int32 `json:"port"`
+	// CacheSize is the size of the registry cache
+	// +optional
+	CacheSize *string `json:"cacheSize,omitempty"`
+	// CacheGarbageCollectionEnabled enables/disables cache garbage collection
+	// +optional
+	CacheGarbageCollectionEnabled *bool `json:"cacheGarbageCollectionEnabled,omitempty"`
 }

@@ -34,4 +34,8 @@ type RegistryMirror struct {
 	UpstreamURL string
 	// Port is the port on which the registry mirror is going to serve
 	Port int32
+	// CacheSize is the size of the registry cache
+	CacheSize *string
+	// CacheGarbageCollectionEnabled enables/disables cache garbage collection
+	CacheGarbageCollectionEnabled *bool
 }
