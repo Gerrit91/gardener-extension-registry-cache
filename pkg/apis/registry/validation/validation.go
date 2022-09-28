@@ -15,6 +15,8 @@
 package validation
 
 import (
+	"strings"
+
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
@@ -45,7 +47,10 @@ func validateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 	const form = "; desired format: host[:port]"
 	if len(upstream) == 0 {
 		allErrors = append(allErrors, field.Required(fldPath, "upstream must be provided"+form))
-		return allErrors
+	}
+
+	if strings.HasPrefix(upstream, "https://") ||  strings.HasPrefix(upstream, "http://") {
+		allErrors = append(allErrors, field.Invalid(fldPath, "upstream must not include a scheme"+form))
 	}
 
 	return allErrors
