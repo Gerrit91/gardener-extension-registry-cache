@@ -17,7 +17,7 @@ package app
 import (
 	"os"
 
-	RegistryServicecmd "github.com/gerrit91/gardener-extension-registry-cache/pkg/cmd"
+	registrycmd "github.com/gerrit91/gardener-extension-registry-cache/pkg/cmd"
 
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -29,7 +29,7 @@ const ExtensionName = "extension-registry-cache"
 // Options holds configuration passed to the registry service controller.
 type Options struct {
 	generalOptions     *controllercmd.GeneralOptions
-	registryOptions    *RegistryServicecmd.RegistryOptions
+	registryOptions    *registrycmd.RegistryOptions
 	restOptions        *controllercmd.RESTOptions
 	managerOptions     *controllercmd.ManagerOptions
 	controllerOptions  *controllercmd.ControllerOptions
@@ -43,7 +43,7 @@ type Options struct {
 func NewOptions() *Options {
 	options := &Options{
 		generalOptions:  &controllercmd.GeneralOptions{},
-		registryOptions: &RegistryServicecmd.RegistryOptions{},
+		registryOptions: &registrycmd.RegistryOptions{},
 		restOptions:     &controllercmd.RESTOptions{},
 		managerOptions: &controllercmd.ManagerOptions{
 			// These are default values.
@@ -60,7 +60,7 @@ func NewOptions() *Options {
 			// This is a default value.
 			MaxConcurrentReconciles: 5,
 		},
-		controllerSwitches: RegistryServicecmd.ControllerSwitches(),
+		controllerSwitches: registrycmd.ControllerSwitches(),
 		reconcileOptions:   &controllercmd.ReconcilerOptions{},
 	}
 

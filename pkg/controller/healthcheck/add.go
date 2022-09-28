@@ -15,14 +15,12 @@
 package healthcheck
 
 import (
-	"context"
 	"time"
 
 	registryv1alpha1 "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	registrycontroller "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
 
 	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
-	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck/general"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -43,10 +41,6 @@ var (
 // RegisterHealthChecks registers health checks for each extension resource
 // HealthChecks are grouped by extension (e.g worker), extension.type (e.g aws) and  Health Check Type (e.g SystemComponentsHealthy)
 func RegisterHealthChecks(mgr manager.Manager, opts healthcheck.DefaultAddArgs) error {
-	preCheckFunc := func(_ context.Context, _ client.Client, _ client.Object, cluster *extensionscontroller.Cluster) bool {
-		return cluster.Shoot.Spec.DNS != nil && cluster.Shoot.Spec.DNS.Domain != nil
-	}
-
 	return healthcheck.DefaultRegistration(
 		registrycontroller.Type,
 		extensionsv1alpha1.SchemeGroupVersion.WithKind(extensionsv1alpha1.ExtensionResource),
@@ -60,7 +54,11 @@ func RegisterHealthChecks(mgr manager.Manager, opts healthcheck.DefaultAddArgs) 
 				ConditionType: string(gardencorev1beta1.ShootSystemComponentsHealthy),
 				HealthCheck: NewRegistryWrapperHealthChecker(
 					general.CheckManagedResource(registryv1alpha1.RegistryResourceName)),
-				PreCheckFunc: preCheckFunc,
+			},
+			{
+				ConditionType: string(gardencorev1beta1.ShootSystemComponentsHealthy),
+				HealthCheck: NewRegistryWrapperHealthChecker(
+					general.CheckManagedResource(registryv1alpha1.RegistryEnsurerResourceName)),
 			},
 		},
 	)

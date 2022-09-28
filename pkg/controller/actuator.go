@@ -20,6 +20,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
 
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
@@ -147,7 +148,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 	}
 
 	// create ManagedResource for the registryCache
-	err = a.createManagedResources(ctx, v1alpha1.RegistryResourceName, namespace, "", resources, nil)
+	err = a.createManagedResources(ctx, v1alpha1.RegistryResourceName, namespace, resources, nil)
 	if err != nil {
 		return err
 	}
@@ -174,8 +175,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 	}
 
 	if len(services.Items) != len(registryConfig.Caches) {
-		log.Info("not all services for all configured caches exist")
-		return err
+		return fmt.Errorf("not all services for all configured caches exist")
 	}
 
 	criMirrors = map[string]string{}
@@ -200,7 +200,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 		return err
 	}
 
-	err = a.createManagedResources(ctx, v1alpha1.RegistryEnsurerResourceName, namespace, "", resources, nil)
+	err = a.createManagedResources(ctx, v1alpha1.RegistryEnsurerResourceName, namespace, resources, nil)
 	if err != nil {
 		return err
 	}
@@ -220,12 +220,23 @@ func (a *actuator) deleteResources(ctx context.Context, log logr.Logger, namespa
 	return managedresources.WaitUntilDeleted(timeoutCtx, a.client, namespace, v1alpha1.RegistryResourceName)
 }
 
-func (a *actuator) createManagedResources(ctx context.Context, name, namespace, class string, resources map[string][]byte, injectedLabels map[string]string) error {
-	keepObjects := false
-	forceOverwriteAnnotations := false
-	secretsWithPrefix := false
+func (a *actuator) createManagedResources(ctx context.Context, name, namespace string, resources map[string][]byte, injectedLabels map[string]string) error {
+	var (
+		secretName, secret = managedresources.NewSecret(a.client, namespace, name, resources, false)
+		managedResource    = managedresources.New(a.client, namespace, name, "", pointer.Bool(false), nil, injectedLabels, pointer.Bool(false)).
+					WithSecretRef(secretName).
+					DeletePersistentVolumeClaims(true)
+	)
 
-	return managedresources.Create(ctx, a.client, namespace, name, secretsWithPrefix, class, resources, &keepObjects, injectedLabels, &forceOverwriteAnnotations)
+	if err := secret.Reconcile(ctx); err != nil {
+		return fmt.Errorf("could not create or update secret of managed resources: %w", err)
+	}
+
+	if err := managedResource.Reconcile(ctx); err != nil {
+		return fmt.Errorf("could not create or update managed resource: %w", err)
+	}
+
+	return nil
 }
 
 func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, _ *registry.RegistryConfig) error {
