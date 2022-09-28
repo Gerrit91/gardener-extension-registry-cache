@@ -16,7 +16,6 @@ package controller
 
 import (
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -56,11 +55,7 @@ const (
 )
 
 func (c *registryCache) Ensure() ([]client.Object, error) {
-	u, err := url.Parse(c.Upstream)
-	if err != nil {
-		return nil, err
-	}
-	c.Name = strings.Replace(fmt.Sprintf("registry-%s", u.Host), ".", "-", -1)
+	c.Name = strings.Replace(fmt.Sprintf("registry-%s", strings.Split(c.Upstream, ":")[0]), ".", "-", -1)
 
 	// TODO: move to defaulter
 	if c.VolumeSize == nil {
@@ -75,11 +70,16 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 		}
 	}
 
-	c.Labels[registryCacheServiceUpstreamLabel] = u.Host
+	c.Labels[registryCacheServiceUpstreamLabel] = c.Upstream
 
 	volumeSize, err := resource.ParseQuantity(*c.VolumeSize)
 	if err != nil {
 		return nil, err
+	}
+
+	upstreamURL := c.Upstream
+	if upstreamURL == "docker.io" {
+		upstreamURL = "registry-1.docker.io"
 	}
 
 	var (
@@ -132,7 +132,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 								Env: []v1.EnvVar{
 									{
 										Name:  environmentVarialbleNameRegistryURL,
-										Value: c.Upstream,
+										Value: upstreamURL,
 									},
 									{
 										Name:  environmentVarialbleNameRegistryDelete,
