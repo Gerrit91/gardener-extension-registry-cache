@@ -13,12 +13,12 @@
 // limitations under the License.
 
 // +k8s:deepcopy-gen=package
-// +k8s:conversion-gen=github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service
-// +k8s:openapi-gen=true
+// +k8s:conversion-gen=github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry
 // +k8s:defaulter-gen=TypeMeta
+// +k8s:openapi-gen=true
 
 //go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/registry.json -template-dir ../../../../vendor/github.com/gardener/gardener/hack/api-reference/template -out-file ../../../../hack/api-reference/registry.md
 
 // Package v1alpha1 contains the registry service extension.
 // +groupName=registry.extensions.gardener.cloud
-package v1alpha1 // import "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
+package v1alpha1 // import "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
