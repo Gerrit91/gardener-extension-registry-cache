@@ -15,6 +15,7 @@
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,7 +41,7 @@ type RegistryCache struct {
 	Upstream string `json:"upstream"`
 	// Size is the size of the registry cache
 	// +optional
-	Size *string `json:"size,omitempty"`
+	Size *resource.Quantity `json:"size,omitempty"`
 	// GarbageCollectionEnabled enables/disables cache garbage collection
 	// +optional
 	GarbageCollectionEnabled *bool `json:"garbageCollectionEnabled,omitempty"`

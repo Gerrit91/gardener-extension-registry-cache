@@ -16,6 +16,7 @@ package registry
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -33,7 +34,7 @@ type RegistryCache struct {
 	// Upstream is the remote registry host (and optionally port) to cache
 	Upstream string
 	// Size is the size of the registry cache
-	Size *string
+	Size *resource.Quantity
 	// GarbageCollectionEnabled enables/disables cache garbage collection
 	GarbageCollectionEnabled *bool
 }
