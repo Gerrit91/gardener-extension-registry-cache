@@ -174,8 +174,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 	}
 
 	if len(services.Items) != len(registryConfig.Caches) {
-		log.Info("not all services for all configured caches exist")
-		return err
+		return fmt.Errorf("not all services for all configured caches exist")
 	}
 
 	criMirrors = map[string]string{}
