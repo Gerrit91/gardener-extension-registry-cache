@@ -107,6 +107,7 @@ func ControllerSwitches() *cmd.SwitchOptions {
 	)
 }
 
+// ApplyHealthCheckConfig applies the HealthCheckConfig.
 func (c *RegistryServiceConfig) ApplyHealthCheckConfig(config *extensionsapisconfig.HealthCheckConfig) {
 	if c.config.HealthCheckConfig != nil {
 		*config = *c.config.HealthCheckConfig
