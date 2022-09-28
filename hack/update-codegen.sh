@@ -20,7 +20,7 @@ set -o pipefail
 
 # Friendly reminder if workspace location is not in $GOPATH
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-if [ "${SCRIPT_DIR}" != "$(realpath $GOPATH)/src/github.com/Gerrit91/gardener-extension-registry-cache/hack" ]; then
+if [ "${SCRIPT_DIR}" != "$(realpath $GOPATH)/src/github.com/gerrit91/gardener-extension-registry-cache/hack" ]; then
   echo "'hack/update-codegen.sh' script does not work correctly if your workspace is outside GOPATH"
   echo "Please check https://github.com/gardener/gardener/blob/master/docs/development/local_setup.md#get-the-sources"
   exit 1

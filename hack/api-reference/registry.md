@@ -10,6 +10,60 @@
 </p>
 Resource Types:
 <ul></ul>
+<h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryCache">RegistryCache
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryConfig">RegistryConfig</a>)
+</p>
+<p>
+<p>RegistryCache defines a registry cache to deploy</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>upstream</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Upstream is the remote registry host (and optionally port) to cache</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>size</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Size is the size of the registry cache</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>garbageCollectionEnabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>GarbageCollectionEnabled enables/disables cache garbage collection</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryConfig">RegistryConfig
 </h3>
 <p>
@@ -25,80 +79,15 @@ Resource Types:
 <tbody>
 <tr>
 <td>
-<code>mirrors</code></br>
+<code>caches</code></br>
 <em>
-<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryMirror">
-[]RegistryMirror
+<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryCache">
+[]RegistryCache
 </a>
 </em>
 </td>
 <td>
-<p>Mirrors is a slice of registry mirrors to deploy</p>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryMirror">RegistryMirror
-</h3>
-<p>
-(<em>Appears on:</em>
-<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryConfig">RegistryConfig</a>)
-</p>
-<p>
-<p>RegistryMirror defines a registry mirror to deploy</p>
-</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>upstreamURL</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<p>UpstreamURL is the remote URL of registry to mirror</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>port</code></br>
-<em>
-int32
-</em>
-</td>
-<td>
-<p>Port is the port on which the registry mirror is going to serve</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>cacheSize</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>CacheSize is the size of the registry cache</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>cacheGarbageCollectionEnabled</code></br>
-<em>
-bool
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>CacheGarbageCollectionEnabled enables/disables cache garbage collection</p>
+<p>Caches is a slice of registry cache to deploy</p>
 </td>
 </tr>
 </tbody>

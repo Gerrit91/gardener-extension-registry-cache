@@ -127,13 +127,13 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 		},
 	}
 
-	for _, m := range registryConfig.Mirrors {
+	for _, cache := range registryConfig.Caches {
 		c := registryCache{
-			Namespace:                     registryCacheNamespaceName,
-			RemoteURL:                     m.UpstreamURL,
-			CacheVolumeSize:               m.CacheSize,
-			CacheGarbageCollectionEnabled: m.CacheGarbageCollectionEnabled,
-			RegistryImage:                 registryImage,
+			Namespace:                registryCacheNamespaceName,
+			Upstream:                 cache.Upstream,
+			VolumeSize:               cache.Size,
+			GarbageCollectionEnabled: cache.GarbageCollectionEnabled,
+			RegistryImage:            registryImage,
 		}
 
 		os, err := c.Ensure()
@@ -162,7 +162,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 
 	var criMirrors map[string]string
 	selector := labels.NewSelector()
-	r, err := labels.NewRequirement(registryCacheServiceMirrorHostLabel, selection.Exists, nil)
+	r, err := labels.NewRequirement(registryCacheServiceUpstreamLabel, selection.Exists, nil)
 	if err != nil {
 		return err
 	}
@@ -178,8 +178,8 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 			return err
 		}
 
-		if len(services.Items) != len(registryConfig.Mirrors) {
-			log.Info("not all services for all configured mirrors exist")
+		if len(services.Items) != len(registryConfig.Caches) {
+			log.Info("not all services for all configured caches exist")
 			return err
 		}
 
@@ -187,7 +187,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 
 		for i := range services.Items {
 			svc := services.Items[i]
-			criMirrors[svc.Labels["mirror-host"]] = fmt.Sprintf("%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port)
+			criMirrors[svc.Labels[registryCacheServiceUpstreamLabel]] = fmt.Sprintf("%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port)
 		}
 
 		return nil

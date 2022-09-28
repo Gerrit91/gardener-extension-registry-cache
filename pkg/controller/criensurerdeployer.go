@@ -30,7 +30,7 @@ const (
 set -euo pipefail
 
 while true; do
-	echo "applying registry mirrors"
+	echo "applying registry caches"
 
 	changed=false
 

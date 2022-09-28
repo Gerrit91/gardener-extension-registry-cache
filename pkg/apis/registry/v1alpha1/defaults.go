@@ -25,8 +25,8 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 
 // SetDefaults_RegistryConfig sets the defaults for the Registry Cache configuration
 func SetDefaults_RegistryConfig(obj *RegistryConfig) {
-	for _, mirror := range obj.Mirrors {
-		mirror.CacheGarbageCollectionEnabled = pointer.Bool(true)
-		mirror.CacheSize = pointer.String("1Gi")
+	for _, cache := range obj.Caches {
+		cache.GarbageCollectionEnabled = pointer.Bool(true)
+		cache.Size = pointer.String("2Gi")
 	}
 }

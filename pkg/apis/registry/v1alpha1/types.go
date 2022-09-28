@@ -30,20 +30,18 @@ const RegistryEnsurerResourceName = "extension-registry-cache-cri-ensurer"
 type RegistryConfig struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// Mirrors is a slice of registry mirrors to deploy
-	Mirrors []RegistryMirror `json:"mirrors"`
+	// Caches is a slice of registry cache to deploy
+	Caches []RegistryCache `json:"caches"`
 }
 
-// RegistryMirror defines a registry mirror to deploy
-type RegistryMirror struct {
-	// UpstreamURL is the remote URL of registry to mirror
-	UpstreamURL string `json:"upstreamURL"`
-	// Port is the port on which the registry mirror is going to serve
-	Port int32 `json:"port"`
-	// CacheSize is the size of the registry cache
+// RegistryCache defines a registry cache to deploy
+type RegistryCache struct {
+	// Upstream is the remote registry host (and optionally port) to cache
+	Upstream string `json:"upstream"`
+	// Size is the size of the registry cache
 	// +optional
-	CacheSize *string `json:"cacheSize,omitempty"`
-	// CacheGarbageCollectionEnabled enables/disables cache garbage collection
+	Size *string `json:"size,omitempty"`
+	// GarbageCollectionEnabled enables/disables cache garbage collection
 	// +optional
-	CacheGarbageCollectionEnabled *bool `json:"cacheGarbageCollectionEnabled,omitempty"`
+	GarbageCollectionEnabled *bool `json:"garbageCollectionEnabled,omitempty"`
 }

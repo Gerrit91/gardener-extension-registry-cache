@@ -132,9 +132,9 @@ generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(MOCKGEN)
 
 .PHONE: generate-in-docker
 generate-in-docker:
-	docker run --rm -it -v /home/gerrit/go:/go -v $(PWD):/go/src/github.com/Gerrit91/gardener-extension-registry-cache golang:1.19 \
-		sh -c "cd /go/src/github.com/Gerrit91/gardener-extension-registry-cache \
-				&& make revendor install generate \
+	docker run --rm -it -v /home/gerrit/go:/go -v $(PWD):/go/src/github.com/gerrit91/gardener-extension-registry-cache golang:1.19 \
+		sh -c "cd /go/src/github.com/gerrit91/gardener-extension-registry-cache \
+				&& make revendor generate \
 				&& chown -R $(shell id -u):$(shell id -g) ."
 
 .PHONY: format

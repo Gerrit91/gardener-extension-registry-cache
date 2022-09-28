@@ -16,9 +16,7 @@ package validation
 
 import (
 	"net/url"
-	"strings"
 
-	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
@@ -28,38 +26,35 @@ import (
 func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
-	for i, mirror := range config.Mirrors {
-		allErrs = append(allErrs, validateRegistry(mirror, fldPath.Child("mirrors").Index(i))...)
+	for i, cache := range config.Caches {
+		allErrs = append(allErrs, validateRegistry(cache, fldPath.Child("caches").Index(i))...)
 	}
 
 	return allErrs
 }
 
-func validateRegistry(registry registry.RegistryMirror, fldPath *field.Path) field.ErrorList {
+func validateRegistry(registry registry.RegistryCache, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	allErrs = append(allErrs, validateRegistryURL(fldPath.Child("upstreamURL"), registry.UpstreamURL)...)
-	if errs := validation.IsValidPortNum(int(registry.Port)); errs != nil {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("port"), registry.Port, "port is invalid: "+strings.Join(errs, ", ")))
-	}
+	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstreamURL"), registry.Upstream)...)
 
 	return allErrs
 }
 
-func validateRegistryURL(fldPath *field.Path, upstreamURL string) field.ErrorList {
+func validateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 	var allErrors field.ErrorList
 
-	const form = "; desired format: https://host[:port]"
-	if len(upstreamURL) == 0 {
-		allErrors = append(allErrors, field.Required(fldPath, "upstream URL must be provided"+form))
+	const form = "; desired format: host[:port]"
+	if len(upstream) == 0 {
+		allErrors = append(allErrors, field.Required(fldPath, "upstream must be provided"+form))
 		return allErrors
 	}
 
-	if u, err := url.Parse(upstreamURL); err != nil {
-		allErrors = append(allErrors, field.Invalid(fldPath, upstreamURL, "url must be a valid URL: "+err.Error()+form))
+	if u, err := url.Parse(upstream); err != nil {
+		allErrors = append(allErrors, field.Invalid(fldPath, upstream, "url must be a valid URL: "+err.Error()+form))
 	} else {
-		if u.Scheme != "https" {
-			allErrors = append(allErrors, field.Invalid(fldPath, u.Scheme, "'https' is the only allowed URL scheme"+form))
+		if u.Scheme != "" {
+			allErrors = append(allErrors, field.Invalid(fldPath, u.Scheme, "scheme is not permitted in the registry URL"+form))
 		}
 		if len(u.Path) != 0 {
 			allErrors = append(allErrors, field.Invalid(fldPath, u.Path, "path is not permitted in the registry URL"+form))

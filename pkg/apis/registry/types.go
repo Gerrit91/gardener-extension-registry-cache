@@ -24,18 +24,16 @@ import (
 type RegistryConfig struct {
 	metav1.TypeMeta
 
-	// Mirrors is a slice of registry mirrors to deploy
-	Mirrors []RegistryMirror
+	// Caches is a slice of registry cache to deploy
+	Caches []RegistryCache
 }
 
-// RegistryMirror defines a registry mirror to deploy
-type RegistryMirror struct {
-	// UpstreamURL is the remote URL of registry to mirror
-	UpstreamURL string
-	// Port is the port on which the registry mirror is going to serve
-	Port int32
-	// CacheSize is the size of the registry cache
-	CacheSize *string
-	// CacheGarbageCollectionEnabled enables/disables cache garbage collection
-	CacheGarbageCollectionEnabled *bool
+// RegistryCache defines a registry cache to deploy
+type RegistryCache struct {
+	// Upstream is the remote registry host (and optionally port) to cache
+	Upstream string
+	// Size is the size of the registry cache
+	Size *string
+	// GarbageCollectionEnabled enables/disables cache garbage collection
+	GarbageCollectionEnabled *bool
 }

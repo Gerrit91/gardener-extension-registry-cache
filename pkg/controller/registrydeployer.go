@@ -36,9 +36,9 @@ type registryCache struct {
 	Namespace string
 	Labels    map[string]string
 
-	RemoteURL                     string
-	CacheVolumeSize               *string
-	CacheGarbageCollectionEnabled *bool
+	Upstream                 string
+	VolumeSize               *string
+	GarbageCollectionEnabled *bool
 
 	RegistryImage *imagevector.Image
 }
@@ -52,22 +52,22 @@ const (
 	environmentVarialbleNameRegistryURL    = "REGISTRY_PROXY_REMOTEURL"
 	environmentVarialbleNameRegistryDelete = "REGISTRY_STORAGE_DELETE_ENABLED"
 
-	registryCacheServiceMirrorHostLabel = "mirror-host"
+	registryCacheServiceUpstreamLabel = "upstream-host"
 )
 
 func (c *registryCache) Ensure() ([]client.Object, error) {
-	u, err := url.Parse(c.RemoteURL)
+	u, err := url.Parse(c.Upstream)
 	if err != nil {
 		return nil, err
 	}
 	c.Name = strings.Replace(fmt.Sprintf("registry-%s", u.Host), ".", "-", -1)
 
 	// TODO: move to defaulter
-	if c.CacheVolumeSize == nil {
-		c.CacheVolumeSize = pointer.String("2Gi")
+	if c.VolumeSize == nil {
+		c.VolumeSize = pointer.String("2Gi")
 	}
-	if c.CacheGarbageCollectionEnabled == nil {
-		c.CacheGarbageCollectionEnabled = pointer.Bool(true)
+	if c.GarbageCollectionEnabled == nil {
+		c.GarbageCollectionEnabled = pointer.Bool(true)
 	}
 	if c.Labels == nil {
 		c.Labels = map[string]string{
@@ -75,9 +75,9 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 		}
 	}
 
-	c.Labels[registryCacheServiceMirrorHostLabel] = u.Host
+	c.Labels[registryCacheServiceUpstreamLabel] = u.Host
 
-	volumeSize, err := resource.ParseQuantity(*c.CacheVolumeSize)
+	volumeSize, err := resource.ParseQuantity(*c.VolumeSize)
 	if err != nil {
 		return nil, err
 	}
@@ -132,11 +132,11 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 								Env: []v1.EnvVar{
 									{
 										Name:  environmentVarialbleNameRegistryURL,
-										Value: c.RemoteURL,
+										Value: c.Upstream,
 									},
 									{
 										Name:  environmentVarialbleNameRegistryDelete,
-										Value: strconv.FormatBool(*c.CacheGarbageCollectionEnabled),
+										Value: strconv.FormatBool(*c.GarbageCollectionEnabled),
 									},
 								},
 								VolumeMounts: []v1.VolumeMount{
