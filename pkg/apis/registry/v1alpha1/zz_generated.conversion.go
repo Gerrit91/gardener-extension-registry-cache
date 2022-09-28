@@ -25,6 +25,7 @@ import (
 	unsafe "unsafe"
 
 	registry "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
+	resource "k8s.io/apimachinery/pkg/api/resource"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -61,7 +62,7 @@ func RegisterConversions(s *runtime.Scheme) error {
 
 func autoConvert_v1alpha1_RegistryCache_To_registry_RegistryCache(in *RegistryCache, out *registry.RegistryCache, s conversion.Scope) error {
 	out.Upstream = in.Upstream
-	out.Size = (*string)(unsafe.Pointer(in.Size))
+	out.Size = (*resource.Quantity)(unsafe.Pointer(in.Size))
 	out.GarbageCollectionEnabled = (*bool)(unsafe.Pointer(in.GarbageCollectionEnabled))
 	return nil
 }
@@ -73,7 +74,7 @@ func Convert_v1alpha1_RegistryCache_To_registry_RegistryCache(in *RegistryCache,
 
 func autoConvert_registry_RegistryCache_To_v1alpha1_RegistryCache(in *registry.RegistryCache, out *RegistryCache, s conversion.Scope) error {
 	out.Upstream = in.Upstream
-	out.Size = (*string)(unsafe.Pointer(in.Size))
+	out.Size = (*resource.Quantity)(unsafe.Pointer(in.Size))
 	out.GarbageCollectionEnabled = (*bool)(unsafe.Pointer(in.GarbageCollectionEnabled))
 	return nil
 }

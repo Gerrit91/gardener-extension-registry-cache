@@ -20,11 +20,12 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v4"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/imagevector"
-	corev1 "k8s.io/api/core/v1"
 
 	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller"
@@ -42,9 +43,6 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-// ActuatorName is the name of the registry service actuator.
-const ActuatorName = "registry-cache-actuator"
 
 // NewActuator returns an actuator responsible for Extension resources.
 func NewActuator(config config.Configuration) extension.Actuator {
@@ -131,8 +129,8 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 		c := registryCache{
 			Namespace:                registryCacheNamespaceName,
 			Upstream:                 cache.Upstream,
-			VolumeSize:               cache.Size,
-			GarbageCollectionEnabled: cache.GarbageCollectionEnabled,
+			VolumeSize:               *cache.Size,
+			GarbageCollectionEnabled: *cache.GarbageCollectionEnabled,
 			RegistryImage:            registryImage,
 		}
 
@@ -149,7 +147,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 		return err
 	}
 
-	// create manageresource for the registryCache
+	// create ManagedResource for the registryCache
 	err = a.createManagedResources(ctx, v1alpha1.RegistryResourceName, namespace, "", resources, nil)
 	if err != nil {
 		return err

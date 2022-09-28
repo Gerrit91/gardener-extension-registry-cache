@@ -42,12 +42,12 @@ string
 <td>
 <code>size</code></br>
 <em>
-string
+k8s.io/apimachinery/pkg/api/resource.Quantity
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>Size is the size of the registry cache</p>
+<p>Size is the size of the registry cache, defaults to 10Gi.</p>
 </td>
 </tr>
 <tr>
@@ -59,7 +59,7 @@ bool
 </td>
 <td>
 <em>(Optional)</em>
-<p>GarbageCollectionEnabled enables/disables cache garbage collection</p>
+<p>GarbageCollectionEnabled enables/disables cache garbage collection, defaults to true.</p>
 </td>
 </tr>
 </tbody>

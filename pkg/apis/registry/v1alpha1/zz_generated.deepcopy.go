@@ -30,8 +30,8 @@ func (in *RegistryCache) DeepCopyInto(out *RegistryCache) {
 	*out = *in
 	if in.Size != nil {
 		in, out := &in.Size, &out.Size
-		*out = new(string)
-		**out = **in
+		x := (*in).DeepCopy()
+		*out = &x
 	}
 	if in.GarbageCollectionEnabled != nil {
 		in, out := &in.GarbageCollectionEnabled, &out.GarbageCollectionEnabled

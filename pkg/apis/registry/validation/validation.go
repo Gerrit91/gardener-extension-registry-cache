@@ -27,16 +27,19 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 	allErrs := field.ErrorList{}
 
 	for i, cache := range config.Caches {
-		allErrs = append(allErrs, validateRegistry(cache, fldPath.Child("caches").Index(i))...)
+		allErrs = append(allErrs, validateRegistryCache(cache, fldPath.Child("caches").Index(i))...)
 	}
 
 	return allErrs
 }
 
-func validateRegistry(registry registry.RegistryCache, fldPath *field.Path) field.ErrorList {
+func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstream"), registry.Upstream)...)
+	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstream"), cache.Upstream)...)
+	if size := cache.Size; size != nil && size.Sign() != 1 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("size"), size, "size must be a quantity greater than zero"))
+	}
 
 	return allErrs
 }
@@ -49,8 +52,8 @@ func validateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 		allErrors = append(allErrors, field.Required(fldPath, "upstream must be provided"+form))
 	}
 
-	if strings.HasPrefix(upstream, "https://") ||  strings.HasPrefix(upstream, "http://") {
-		allErrors = append(allErrors, field.Invalid(fldPath, "upstream must not include a scheme"+form))
+	if strings.HasPrefix(upstream, "https://") || strings.HasPrefix(upstream, "http://") {
+		allErrors = append(allErrors, field.Invalid(fldPath, upstream, "upstream must not include a scheme"+form))
 	}
 
 	return allErrors

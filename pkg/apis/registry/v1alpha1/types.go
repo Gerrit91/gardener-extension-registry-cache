@@ -39,10 +39,10 @@ type RegistryConfig struct {
 type RegistryCache struct {
 	// Upstream is the remote registry host (and optionally port) to cache
 	Upstream string `json:"upstream"`
-	// Size is the size of the registry cache
+	// Size is the size of the registry cache, defaults to 10Gi.
 	// +optional
 	Size *resource.Quantity `json:"size,omitempty"`
-	// GarbageCollectionEnabled enables/disables cache garbage collection
+	// GarbageCollectionEnabled enables/disables cache garbage collection, defaults to true.
 	// +optional
 	GarbageCollectionEnabled *bool `json:"garbageCollectionEnabled,omitempty"`
 }

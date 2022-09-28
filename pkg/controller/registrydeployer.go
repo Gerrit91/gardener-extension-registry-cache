@@ -36,8 +36,8 @@ type registryCache struct {
 	Labels    map[string]string
 
 	Upstream                 string
-	VolumeSize               *string
-	GarbageCollectionEnabled *bool
+	VolumeSize               resource.Quantity
+	GarbageCollectionEnabled bool
 
 	RegistryImage *imagevector.Image
 }
@@ -57,13 +57,6 @@ const (
 func (c *registryCache) Ensure() ([]client.Object, error) {
 	c.Name = strings.Replace(fmt.Sprintf("registry-%s", strings.Split(c.Upstream, ":")[0]), ".", "-", -1)
 
-	// TODO: move to defaulter
-	if c.VolumeSize == nil {
-		c.VolumeSize = pointer.String("2Gi")
-	}
-	if c.GarbageCollectionEnabled == nil {
-		c.GarbageCollectionEnabled = pointer.Bool(true)
-	}
 	if c.Labels == nil {
 		c.Labels = map[string]string{
 			"app": c.Name,
@@ -71,11 +64,6 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 	}
 
 	c.Labels[registryCacheServiceUpstreamLabel] = c.Upstream
-
-	volumeSize, err := resource.ParseQuantity(*c.VolumeSize)
-	if err != nil {
-		return nil, err
-	}
 
 	upstreamURL := c.Upstream
 	if upstreamURL == "docker.io" {
@@ -102,7 +90,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 			},
 		}
 
-		statefulset = &appsv1.StatefulSet{
+		statefulSet = &appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      c.Name,
 				Namespace: registryCacheNamespaceName,
@@ -137,7 +125,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 									},
 									{
 										Name:  environmentVarialbleNameRegistryDelete,
-										Value: strconv.FormatBool(*c.GarbageCollectionEnabled),
+										Value: strconv.FormatBool(c.GarbageCollectionEnabled),
 									},
 								},
 								VolumeMounts: []v1.VolumeMount{
@@ -161,7 +149,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
 							Resources: v1.ResourceRequirements{
 								Requests: v1.ResourceList{
-									v1.ResourceStorage: volumeSize,
+									v1.ResourceStorage: c.VolumeSize,
 								},
 							},
 						},
@@ -173,6 +161,6 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 
 	return []client.Object{
 		service,
-		statefulset,
+		statefulSet,
 	}, nil
 }

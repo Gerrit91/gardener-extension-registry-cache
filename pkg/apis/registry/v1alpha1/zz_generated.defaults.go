@@ -34,5 +34,8 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 }
 
 func SetObjectDefaults_RegistryConfig(in *RegistryConfig) {
-	SetDefaults_RegistryConfig(in)
+	for i := range in.Caches {
+		a := &in.Caches[i]
+		SetDefaults_RegistryCache(a)
+	}
 }
