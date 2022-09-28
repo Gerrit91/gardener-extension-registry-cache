@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/avast/retry-go/v4"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
@@ -153,6 +152,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 		return err
 	}
 
+	// get service IPs from shoot
 	_, shootClient, err := util.NewClientForShoot(ctx, a.client, cluster.ObjectMeta.Name, client.Options{}, extensionsconfig.RESTOptions{})
 	if err != nil {
 		return fmt.Errorf("shoot client cannot be crated: %w", err)
@@ -166,32 +166,22 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 	}
 	selector = selector.Add(*r)
 
-	err = retry.Do(func() error {
-		services := &corev1.ServiceList{}
-		if err := shootClient.List(ctx, services, &client.ListOptions{
-			Namespace:     registryCacheNamespaceName,
-			LabelSelector: selector,
-		}); err != nil {
-			log.Error(err, "could not read extension from shoot namespace")
-			return err
-		}
-
-		if len(services.Items) != len(registryConfig.Caches) {
-			log.Info("not all services for all configured caches exist")
-			return err
-		}
-
-		criMirrors = map[string]string{}
-
-		for i := range services.Items {
-			svc := services.Items[i]
-			criMirrors[svc.Labels[registryCacheServiceUpstreamLabel]] = fmt.Sprintf("http://%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port)
-		}
-
-		return nil
-	}, retry.Context(ctx), retry.LastErrorOnly(true))
-	if err != nil {
+	// get all registry cache services
+	services := &corev1.ServiceList{}
+	if err := shootClient.List(ctx, services, client.InNamespace(registryCacheNamespaceName), client.MatchingLabelsSelector{Selector: selector}); err != nil {
+		log.Error(err, "could not read services from shoot")
 		return err
+	}
+
+	if len(services.Items) != len(registryConfig.Caches) {
+		log.Info("not all services for all configured caches exist")
+		return err
+	}
+
+	criMirrors = map[string]string{}
+	for i := range services.Items {
+		svc := services.Items[i]
+		criMirrors[svc.Labels[registryCacheServiceUpstreamLabel]] = fmt.Sprintf("http://%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port)
 	}
 
 	e := criEnsurer{
