@@ -37,11 +37,11 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger.Info("Setting up webhook", "name", Name)
 
 	return extensionswebhook.New(mgr, extensionswebhook.Args{
-		Provider:   controller.Type,
-		Name:       Name,
-		Path:       "/webhooks/validate",
+		Provider: controller.Type,
+		Name:     Name,
+		Path:     "/webhooks/validate",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
-			NewShootValidator():         {{Obj: &core.Shoot{}}},
+			NewShootValidator(): {{Obj: &core.Shoot{}}},
 		},
 	})
 }
