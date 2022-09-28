@@ -32,45 +32,27 @@ const (
 set -euo pipefail
 
 CONTAINERD_IMPORTS_DIR="/etc/containerd/conf.d"
-
-function add_containerd_imports() {
-	CONTAINERD_CONFIG_TOML="/host/etc/containerd/config.toml"
-
-	imports="$(grep -r "^imports.*=.*" "$CONTAINERD_CONFIG_TOML" || true)"
-
-	if [[ -z "$imports" ]]; then
-		echo "imports = [ \"$CONTAINERD_IMPORTS_DIR/*.toml\" ]" >> "$CONTAINERD_CONFIG_TOML"
-	else
-		locations=${imports##*\=}
-		locations=${locations//[\[\]]/}
-		if [[ $locations =~ ${CONTAINERD_IMPORTS_DIR} ]]; then
-			return
-		fi
-		if [[ ${#locations} -eq 0 ]]; then
-			locations="\"$CONTAINERD_IMPORTS_DIR/*.toml\""
-		else
-			locations="\"$CONTAINERD_IMPORTS_DIR/*.toml\", $locations"
-		fi
-		sed -i "s#^imports.*#imports = [$locations]#g" "$CONTAINERD_CONFIG_TOML"
-	fi
-}
-
 CONFIG_INPUT_FILE=$1
+
+if ! grep -F '/etc/containerd/conf.d/*.toml' /host/etc/containerd/config.toml; then
+	# https://github.com/gardener/gardener/blob/v1.51.0/docs/usage/custom-containerd-config.md
+	echo "ERROR: Only works on workers created with Gardener >v1.51, exiting."
+	exit 1
+fi
 
 if [ ! -e "$CONFIG_INPUT_FILE" ]; then
 	echo "ERROR: Config input file $CONFIG_INPUT_FILE could not be found, exiting."
 	exit 1
 fi
 
-mkdir -p "/host/$CONTAINERD_IMPORTS_DIR"
-add_containerd_imports
+mkdir -p "/host$CONTAINERD_IMPORTS_DIR"
 
 while true; do
 	input_file=$(cat "$CONFIG_INPUT_FILE")
-	existing_file=$(cat "/host/$CONTAINERD_IMPORTS_DIR/$(basename "$CONFIG_INPUT_FILE")")
+	existing_file=$(cat "/host$CONTAINERD_IMPORTS_DIR/$(basename "$CONFIG_INPUT_FILE")")
 	if [[ "$input_file" != "$existing_file" ]]; then
 		echo "restarting containerd"
-		cp -f "$CONFIG_INPUT_FILE" "/host/$CONTAINERD_IMPORTS_DIR/"
+		cp -f "$CONFIG_INPUT_FILE" "/host$CONTAINERD_IMPORTS_DIR/"
 		chroot /host systemctl restart containerd.service
 		echo "applied registry mirrors, sleeping for a minute"
 	else
