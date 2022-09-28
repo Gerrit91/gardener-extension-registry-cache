@@ -1,11 +1,13 @@
 package controller
 
 import (
+	"bytes"
 	"fmt"
-	"strings"
+	"text/template"
 
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -19,60 +21,76 @@ type criEnsurer struct {
 
 	CRIEnsurerImage *imagevector.Image
 
-	RegistryMirrors map[string]string
+	ReferencedServices *corev1.ServiceList
 }
 
 const (
 	criEnsurerName = "cri-config-ensurer"
 	scriptOfDeath  = `
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -euo pipefail
 
-while true; do
-	echo "applying registry caches"
+CONTAINERD_IMPORTS_DIR="/etc/containerd/conf.d"
 
-	changed=false
+function add_containerd_imports() {
+	CONTAINERD_CONFIG_TOML="/host/etc/containerd/config.toml"
 
-	for mirror in $@; do
-	registry=$(echo $mirror | cut -f1 -d'@')
-	endpoint=$(echo $mirror | cut -f2 -d'@')
+	imports="$(grep -r "^imports.*=.*" "$CONTAINERD_CONFIG_TOML" || true)"
 
-	line1="[plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"${registry}\"]"
-	line2="  endpoint = [\"${endpoint}\"]"
-
-	cat /host/etc/containerd/config.toml | grep -F "${line1}" && continue
-
-	changed=true
-
-	printf "$line1\n" >> /host/etc/containerd/config.toml
-	printf "$line2\n" >> /host/etc/containerd/config.toml
-	done
-
-	if [ "$changed" = true ]; then
-	echo "restarting containerd"
-	chroot /host systemctl restart containerd
-
-	echo "applied registry mirrors, sleeping for a minute"
+	if [[ -z "$imports" ]]; then
+		echo "imports = [ \"$CONTAINERD_IMPORTS_DIR/*.toml\" ]" >> "$CONTAINERD_CONFIG_TOML"
 	else
-	echo "no changes required, sleeping for a minute"
+		locations=${imports##*\=}
+		locations=${locations//[\[\]]/}
+		if [[ $locations =~ ${CONTAINERD_IMPORTS_DIR} ]]; then
+			return
+		fi
+		if [[ ${#locations} -eq 0 ]]; then
+			locations="\"$CONTAINERD_IMPORTS_DIR/*.toml\""
+		else
+			locations="\"$CONTAINERD_IMPORTS_DIR/*.toml\", $locations"
+		fi
+		sed -i "s#^imports.*#imports = [$locations]#g" "$CONTAINERD_CONFIG_TOML"
 	fi
+}
 
+CONFIG_INPUT_FILE=$1
+
+if [ ! -e "$CONFIG_INPUT_FILE" ]; then
+	echo "ERROR: Config input file $CONFIG_INPUT_FILE could not be found, exiting."
+	exit 1
+fi
+
+mkdir -p "/host/$CONTAINERD_IMPORTS_DIR"
+add_containerd_imports
+
+while true; do
+	input_file=$(cat "$CONFIG_INPUT_FILE")
+	existing_file=$(cat "/host/$CONTAINERD_IMPORTS_DIR/$(basename "$CONFIG_INPUT_FILE")")
+	if [[ "$input_file" != "$existing_file" ]]; then
+		echo "restarting containerd"
+		cp -f "$CONFIG_INPUT_FILE" "/host/$CONTAINERD_IMPORTS_DIR/"
+		chroot /host systemctl restart containerd.service
+		echo "applied registry mirrors, sleeping for a minute"
+	else
+		echo "no changes required, sleeping for a minute"
+	fi
 	sleep 60
 done
 `
 )
 
-func (c *criEnsurer) Ensure() []client.Object {
+func (c *criEnsurer) Ensure() ([]client.Object, error) {
 	if c.Labels == nil {
 		c.Labels = map[string]string{
 			"app": c.Name,
 		}
 	}
 
-	var registryMirrors []string
-	for host, address := range c.RegistryMirrors {
-		registryMirrors = append(registryMirrors, fmt.Sprintf(`'%s@%s'`, host, address))
+	toml, err := c.configToml()
+	if err != nil {
+		return nil, fmt.Errorf("unable to template toml: %w", err)
 	}
 
 	var (
@@ -83,7 +101,8 @@ func (c *criEnsurer) Ensure() []client.Object {
 				Labels:    c.Labels,
 			},
 			Data: map[string]string{
-				"reconcile.sh": scriptOfDeath,
+				"reconcile.sh":                     scriptOfDeath,
+				"zz-extension-registry-cache.toml": toml,
 			},
 		}
 
@@ -111,14 +130,14 @@ func (c *criEnsurer) Ensure() []client.Object {
 									Privileged: pointer.Bool(true),
 								},
 								Command: []string{
-									"sh", "-c", fmt.Sprintf("/scripts/reconcile.sh %s", strings.Join(registryMirrors, " ")),
+									"bash", "-c", "/work/reconcile.sh /work/zz-extension-registry-cache.toml",
 								},
 								ImagePullPolicy: v1.PullIfNotPresent,
 								VolumeMounts: []v1.VolumeMount{
 									{
-										Name:      "script",
+										Name:      "work",
 										ReadOnly:  true,
-										MountPath: "/scripts",
+										MountPath: "/work",
 									},
 									{
 										Name:      "host",
@@ -129,7 +148,7 @@ func (c *criEnsurer) Ensure() []client.Object {
 						},
 						Volumes: []v1.Volume{
 							{
-								Name: "script",
+								Name: "work",
 								VolumeSource: v1.VolumeSource{
 									ConfigMap: &v1.ConfigMapVolumeSource{
 										LocalObjectReference: v1.LocalObjectReference{
@@ -157,5 +176,39 @@ func (c *criEnsurer) Ensure() []client.Object {
 	return []client.Object{
 		configMap,
 		daemonSet,
+	}, nil
+}
+
+func (c *criEnsurer) configToml() (string, error) {
+	type criMirror struct {
+		Host     string
+		Endpoint string
 	}
+
+	var mirrors []*criMirror
+	for i := range c.ReferencedServices.Items {
+		svc := c.ReferencedServices.Items[i]
+		mirrors = append(mirrors, &criMirror{
+			Host:     svc.Labels[registryCacheServiceUpstreamLabel],
+			Endpoint: fmt.Sprintf("http://%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port),
+		})
+	}
+
+	text := `# governed by gardener-extension-registry-cache, do not edit
+{{ range $mirror := . -}}
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ $mirror.Host }}"]
+  endpoint = ["{{ $mirror.Endpoint }}"]
+{{ end }}`
+
+	tpl, err := template.New("").Parse(text)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	if err := tpl.Execute(&buf, mirrors); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
