@@ -15,8 +15,6 @@
 package validation
 
 import (
-	"net/url"
-
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
@@ -36,7 +34,7 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 func validateRegistry(registry registry.RegistryCache, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstreamURL"), registry.Upstream)...)
+	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstream"), registry.Upstream)...)
 
 	return allErrs
 }
@@ -48,29 +46,6 @@ func validateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 	if len(upstream) == 0 {
 		allErrors = append(allErrors, field.Required(fldPath, "upstream must be provided"+form))
 		return allErrors
-	}
-
-	if u, err := url.Parse(upstream); err != nil {
-		allErrors = append(allErrors, field.Invalid(fldPath, upstream, "url must be a valid URL: "+err.Error()+form))
-	} else {
-		if u.Scheme != "" {
-			allErrors = append(allErrors, field.Invalid(fldPath, u.Scheme, "scheme is not permitted in the registry URL"+form))
-		}
-		if len(u.Path) != 0 {
-			allErrors = append(allErrors, field.Invalid(fldPath, u.Path, "path is not permitted in the registry URL"+form))
-		}
-		if len(u.Host) == 0 {
-			allErrors = append(allErrors, field.Invalid(fldPath, u.Host, "host must be provided in the registry URL"+form))
-		}
-		if u.User != nil {
-			allErrors = append(allErrors, field.Invalid(fldPath, u.User.String(), "user information is not permitted in the registry URL"))
-		}
-		if len(u.Fragment) != 0 {
-			allErrors = append(allErrors, field.Invalid(fldPath, u.Fragment, "fragments are not permitted in the registry URL"))
-		}
-		if len(u.RawQuery) != 0 {
-			allErrors = append(allErrors, field.Invalid(fldPath, u.RawQuery, "query parameters are not permitted in the registry URL"))
-		}
 	}
 
 	return allErrors

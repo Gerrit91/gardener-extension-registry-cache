@@ -27,7 +27,7 @@ IGNORE_OPERATION_ANNOTATION := true
 WEBHOOK_CONFIG_PORT	:= 8444
 WEBHOOK_CONFIG_MODE	:= url
 WEBHOOK_CONFIG_URL	:= host.docker.internal:${WEBHOOK_CONFIG_PORT}
-WEBHOOK_CERT_DIR    := ./example/admission-certs
+WEBHOOK_CERT_DIR    := ./example/admission
 EXTENSION_NAMESPACE	:=
 
 WEBHOOK_PARAM := --webhook-config-url=${WEBHOOK_CONFIG_URL}
