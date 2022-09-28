@@ -16,7 +16,9 @@ package validation_test
 
 import (
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega/gstruct"
@@ -33,10 +35,12 @@ var _ = Describe("Validation", func() {
 	)
 
 	BeforeEach(func() {
+		size := resource.MustParse("5Gi")
 		registryConfig = &api.RegistryConfig{
-			Mirrors: []api.RegistryMirror{{
-				UpstreamURL: "https://registry-1.docker.io",
-				Port:        5000,
+			Caches: []api.RegistryCache{{
+				Upstream:                 "docker.io",
+				Size:                     &size,
+				GarbageCollectionEnabled: pointer.Bool(true),
 			}},
 		}
 	})
@@ -46,101 +50,55 @@ var _ = Describe("Validation", func() {
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(BeEmpty())
 		})
 
-		It("should require upstream URL", func() {
-			registryConfig.Mirrors[0].UpstreamURL = ""
+		It("should require upstream", func() {
+			registryConfig.Caches[0].Upstream = ""
 
-			path := fldPath.Child("mirrors").Index(0).Child("upstreamURL").String()
+			path := fldPath.Child("caches").Index(0).Child("upstream").String()
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeRequired),
 					"Field":  Equal(path),
-					"Detail": ContainSubstring("upstream URL must be provided"),
+					"Detail": ContainSubstring("upstream must be provided"),
 				})),
 			))
 		})
 
-		It("should deny invalid upstream URL", func() {
-			registryConfig.Mirrors[0].UpstreamURL = "https://registry-1:docker:io/"
+		It("should deny upstream with scheme", func() {
+			registryConfig.Caches = append(registryConfig.Caches, *registryConfig.Caches[0].DeepCopy())
+			registryConfig.Caches[0].Upstream = "https://docker.io"
+			registryConfig.Caches[1].Upstream = "http://docker.io"
 
-			path := fldPath.Child("mirrors").Index(0).Child("upstreamURL").String()
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(path),
-					"Detail": ContainSubstring("must be a valid URL"),
+					"Field":  Equal(fldPath.Child("caches").Index(0).Child("upstream").String()),
+					"Detail": ContainSubstring("upstream must not include a scheme"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal(fldPath.Child("caches").Index(1).Child("upstream").String()),
+					"Detail": ContainSubstring("upstream must not include a scheme"),
 				})),
 			))
 		})
 
-		It("should deny upstream URL without host", func() {
-			registryConfig.Mirrors[0].UpstreamURL = "https://"
-
-			path := fldPath.Child("mirrors").Index(0).Child("upstreamURL").String()
-			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(path),
-					"Detail": ContainSubstring("host must be provided"),
-				})),
-			))
-		})
-
-		It("should deny upstream URL with non-permitted parts", func() {
-			registryConfig.Mirrors[0].UpstreamURL = "http://user:pass@registry-1.docker.io/path/to/foo?query#fragment"
-
-			path := fldPath.Child("mirrors").Index(0).Child("upstreamURL").String()
-			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(path),
-					"Detail": ContainSubstring("https' is the only allowed URL scheme"),
-				})),
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(path),
-					"Detail": ContainSubstring("path is not permitted"),
-				})),
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(path),
-					"Detail": ContainSubstring("user information is not permitted"),
-				})),
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(path),
-					"Detail": ContainSubstring("fragments are not permitted"),
-				})),
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(path),
-					"Detail": ContainSubstring("query parameters are not permitted"),
-				})),
-			))
-		})
-
-		It("should deny invalid port numbers", func() {
-			registryConfig.Mirrors = append(registryConfig.Mirrors, *registryConfig.Mirrors[0].DeepCopy())
-			registryConfig.Mirrors = append(registryConfig.Mirrors, *registryConfig.Mirrors[0].DeepCopy())
-			registryConfig.Mirrors = append(registryConfig.Mirrors, *registryConfig.Mirrors[0].DeepCopy())
-			registryConfig.Mirrors[0].Port = 0
-			registryConfig.Mirrors[1].Port = -1
-			registryConfig.Mirrors[2].Port = 65536
+		It("should deny non-positive cache size", func() {
+			registryConfig.Caches = append(registryConfig.Caches, *registryConfig.Caches[0].DeepCopy())
+			zeroSize := resource.MustParse("0")
+			negativeSize := resource.MustParse("-1Gi")
+			registryConfig.Caches[0].Size = &zeroSize
+			registryConfig.Caches[1].Size = &negativeSize
 
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(fldPath.Child("mirrors").Index(0).Child("port").String()),
-					"Detail": ContainSubstring("port is invalid"),
+					"Field":  Equal(fldPath.Child("caches").Index(0).Child("size").String()),
+					"Detail": ContainSubstring("size must be a quantity greater than zero"),
 				})),
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(fldPath.Child("mirrors").Index(1).Child("port").String()),
-					"Detail": ContainSubstring("port is invalid"),
-				})),
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(fldPath.Child("mirrors").Index(2).Child("port").String()),
-					"Detail": ContainSubstring("port is invalid"),
+					"Field":  Equal(fldPath.Child("caches").Index(1).Child("size").String()),
+					"Detail": ContainSubstring("size must be a quantity greater than zero"),
 				})),
 			))
 		})

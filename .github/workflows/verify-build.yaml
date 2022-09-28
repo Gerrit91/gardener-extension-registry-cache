@@ -27,12 +27,12 @@ jobs:
       GOBIN: ${{ github.workspace }}/bin
     defaults:
       run:
-        working-directory: ${{ env.GOPATH }}/src/github.com/Gerrit91/gardener-extension-registry-cache
+        working-directory: ${{ env.GOPATH }}/src/github.com/gerrit91/gardener-extension-registry-cache
 
     steps:
     - uses: actions/checkout@v2
       with:
-        path: ${{ env.GOPATH }}/src/github.com/Gerrit91/gardener-extension-registry-cache
+        path: ${{ env.GOPATH }}/src/github.com/gerrit91/gardener-extension-registry-cache
     - name: Setup Go
       uses: actions/setup-go@v2
       with:

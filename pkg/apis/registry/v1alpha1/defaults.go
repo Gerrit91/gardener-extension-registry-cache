@@ -15,9 +15,23 @@
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
+}
+
+// SetDefaults_RegistryCache sets the defaults for the RegistryCache configuration
+func SetDefaults_RegistryCache(cache *RegistryCache) {
+	if cache.Size == nil {
+		defaultCacheSize := resource.MustParse("10Gi")
+		cache.Size = &defaultCacheSize
+	}
+
+	if cache.GarbageCollectionEnabled == nil {
+		cache.GarbageCollectionEnabled = pointer.Bool(true)
+	}
 }

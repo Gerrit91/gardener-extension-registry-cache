@@ -3,3 +3,7 @@ images:
   sourceRepository: github.com/distribution/distribution
   repository: registry
   tag: "2.8.1"
+- name: cri-config-ensurer
+  sourceRepository: github.com/alpinelinux/docker-alpine
+  repository: alpine
+  tag: "3.16"

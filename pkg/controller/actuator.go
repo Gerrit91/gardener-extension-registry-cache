@@ -17,32 +17,31 @@ package controller
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"time"
 
-	"k8s.io/utils/pointer"
+	corev1 "k8s.io/api/core/v1"
 
-	"github.com/gerrit91/gardener-extension-registry-cache/charts"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/imagevector"
 
+	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/chartrenderer"
+
+	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/selection"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-// ActuatorName is the name of the registry service actuator.
-const ActuatorName = "registry-cache-actuator"
 
 // NewActuator returns an actuator responsible for Extension resources.
 func NewActuator(config config.Configuration) extension.Actuator {
@@ -85,7 +84,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		}
 	}
 
-	if err := a.createResources(ctx, registryConfig, cluster, namespace); err != nil {
+	if err := a.createResources(ctx, log, registryConfig, cluster, namespace); err != nil {
 		return err
 	}
 
@@ -94,7 +93,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 
 // Delete the Extension resource.
 func (a *actuator) Delete(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
-	return a.deleteResources(ctx, ex.GetNamespace())
+	return a.deleteResources(ctx, log, ex.GetNamespace())
 }
 
 // Restore the Extension resource.
@@ -107,36 +106,111 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	return nil
 }
 
-func (a *actuator) createResources(ctx context.Context, registryConfig *registry.RegistryConfig, cluster *controller.Cluster, namespace string) error {
-	var mirrors []map[string]interface{}
-	for _, m := range registryConfig.Mirrors {
-		mirrors = append(mirrors, map[string]interface{}{
-			"remoteURL": m.UpstreamURL,
-			"port":      m.Port,
-		})
-	}
-
+func (a *actuator) createResources(ctx context.Context, log logr.Logger, registryConfig *registry.RegistryConfig, cluster *controller.Cluster, namespace string) error {
 	registryImage, err := imagevector.ImageVector().FindImage("registry")
 	if err != nil {
 		return fmt.Errorf("failed to find registry image: %w", err)
 	}
+	ensurerImage, err := imagevector.ImageVector().FindImage("cri-config-ensurer")
+	if err != nil {
+		return fmt.Errorf("failed to find ensurer image: %w", err)
+	}
 
-	values := map[string]interface{}{
-		"mirrors": mirrors,
-		"images": map[string]any{
-			"registry": registryImage.String(),
+	objects := []client.Object{
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: registryCacheNamespaceName,
+			},
 		},
 	}
 
-	renderer, err := util.NewChartRendererForShoot(cluster.Shoot.Spec.Kubernetes.Version)
-	if err != nil {
-		return fmt.Errorf("could not create chart renderer: %w", err)
+	for _, cache := range registryConfig.Caches {
+		c := registryCache{
+			Namespace:                registryCacheNamespaceName,
+			Upstream:                 cache.Upstream,
+			VolumeSize:               *cache.Size,
+			GarbageCollectionEnabled: *cache.GarbageCollectionEnabled,
+			RegistryImage:            registryImage,
+		}
+
+		os, err := c.Ensure()
+		if err != nil {
+			return err
+		}
+
+		objects = append(objects, os...)
 	}
 
-	return a.createManagedResource(ctx, namespace, v1alpha1.RegistryResourceName, "", renderer, v1alpha1.RegistryChartName, metav1.NamespaceSystem, values, nil)
+	resources, err := managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer).AddAllAndSerialize(objects...)
+	if err != nil {
+		return err
+	}
+
+	// create ManagedResource for the registryCache
+	err = a.createManagedResources(ctx, v1alpha1.RegistryResourceName, namespace, "", resources, nil)
+	if err != nil {
+		return err
+	}
+
+	// get service IPs from shoot
+	_, shootClient, err := util.NewClientForShoot(ctx, a.client, cluster.ObjectMeta.Name, client.Options{}, extensionsconfig.RESTOptions{})
+	if err != nil {
+		return fmt.Errorf("shoot client cannot be crated: %w", err)
+	}
+
+	var criMirrors map[string]string
+	selector := labels.NewSelector()
+	r, err := labels.NewRequirement(registryCacheServiceUpstreamLabel, selection.Exists, nil)
+	if err != nil {
+		return err
+	}
+	selector = selector.Add(*r)
+
+	// get all registry cache services
+	services := &corev1.ServiceList{}
+	if err := shootClient.List(ctx, services, client.InNamespace(registryCacheNamespaceName), client.MatchingLabelsSelector{Selector: selector}); err != nil {
+		log.Error(err, "could not read services from shoot")
+		return err
+	}
+
+	if len(services.Items) != len(registryConfig.Caches) {
+		log.Info("not all services for all configured caches exist")
+		return err
+	}
+
+	criMirrors = map[string]string{}
+	for i := range services.Items {
+		svc := services.Items[i]
+		criMirrors[svc.Labels[registryCacheServiceUpstreamLabel]] = fmt.Sprintf("http://%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port)
+	}
+
+	e := criEnsurer{
+		Name:            criEnsurerName,
+		Namespace:       registryCacheNamespaceName,
+		CRIEnsurerImage: ensurerImage,
+		RegistryMirrors: criMirrors,
+	}
+
+	os := e.Ensure()
+	objects = []client.Object{}
+	objects = append(objects, os...)
+
+	resources, err = managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer).AddAllAndSerialize(objects...)
+	if err != nil {
+		return err
+	}
+
+	err = a.createManagedResources(ctx, v1alpha1.RegistryEnsurerResourceName, namespace, "", resources, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (a *actuator) deleteResources(ctx context.Context, namespace string) error {
+func (a *actuator) deleteResources(ctx context.Context, log logr.Logger, namespace string) error {
+	log.Info("deleting managed resource for registry cache")
+
 	if err := managedresources.Delete(ctx, a.client, namespace, v1alpha1.RegistryResourceName, false); err != nil {
 		return err
 	}
@@ -146,13 +220,16 @@ func (a *actuator) deleteResources(ctx context.Context, namespace string) error 
 	return managedresources.WaitUntilDeleted(timeoutCtx, a.client, namespace, v1alpha1.RegistryResourceName)
 }
 
-func (a *actuator) createManagedResource(ctx context.Context, namespace, name, class string, renderer chartrenderer.Interface, chartName, chartNamespace string, chartValues map[string]interface{}, injectedLabels map[string]string) error {
-	chartPath := filepath.Join(charts.ChartsPath, chartName)
-	chart, err := renderer.RenderEmbeddedFS(charts.Internal, chartPath, chartName, chartNamespace, chartValues)
-	if err != nil {
-		return err
-	}
+func (a *actuator) createManagedResources(ctx context.Context, name, namespace, class string, resources map[string][]byte, injectedLabels map[string]string) error {
+	keepObjects := false
+	forceOverwriteAnnotations := false
+	secretsWithPrefix := false
 
-	data := map[string][]byte{chartName: chart.Manifest()}
-	return managedresources.Create(ctx, a.client, namespace, name, false, class, data, pointer.Bool(false), injectedLabels, pointer.Bool(false))
+	return managedresources.Create(ctx, a.client, namespace, name, secretsWithPrefix, class, resources, &keepObjects, injectedLabels, &forceOverwriteAnnotations)
+}
+
+func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, _ *registry.RegistryConfig) error {
+	patch := client.MergeFrom(ex.DeepCopy())
+	// ex.Status.Resources = resources
+	return a.client.Status().Patch(ctx, ex, patch)
 }

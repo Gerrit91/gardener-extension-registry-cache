@@ -16,9 +16,12 @@ spec:
     providerConfig:
       apiVersion: registry.extensions.gardener.cloud/v1alpha1
       kind: RegistryConfig
-      mirrors:
-      - upstreamURL: https://registry-1.docker.io
-        port: 5000
+      caches:
+      - upstream: docker.io
+        size: 500Mi
+      - upstream: ghcr.io
+      - upstream: quay.io
+        garbageCollectionEnabled: false
   networking:
     type: calico
     providerConfig:

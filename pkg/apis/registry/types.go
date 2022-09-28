@@ -15,6 +15,7 @@
 package registry
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -24,14 +25,16 @@ import (
 type RegistryConfig struct {
 	metav1.TypeMeta
 
-	// Mirrors is a slice of registry mirrors to deploy
-	Mirrors []RegistryMirror
+	// Caches is a slice of registry cache to deploy
+	Caches []RegistryCache
 }
 
-// RegistryMirror defines a registry mirror to deploy
-type RegistryMirror struct {
-	// UpstreamURL is the remote URL of registry to mirror
-	UpstreamURL string
-	// Port is the port on which the registry mirror is going to serve
-	Port int32
+// RegistryCache defines a registry cache to deploy
+type RegistryCache struct {
+	// Upstream is the remote registry host (and optionally port) to cache
+	Upstream string
+	// Size is the size of the registry cache
+	Size *resource.Quantity
+	// GarbageCollectionEnabled enables/disables cache garbage collection
+	GarbageCollectionEnabled *bool
 }

@@ -72,6 +72,12 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 		return nil
 	}
 
+	for _, worker := range shoot.Spec.Provider.Workers {
+		if worker.CRI.Name != "containerd" {
+			return fmt.Errorf("Containerruntime needs to be containerd when container registry cache is used")
+		}
+	}
+
 	providerConfigPath := fldPath.Child("providerConfig")
 
 	registryConfig, err := decodeRegistryConfig(s.decoder, ext.ProviderConfig, providerConfigPath)

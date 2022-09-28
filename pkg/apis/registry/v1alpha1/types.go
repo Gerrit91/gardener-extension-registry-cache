@@ -15,14 +15,15 @@
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // RegistryResourceName is the name for registry resources in the shoot.
 const RegistryResourceName = "extension-registry-cache"
 
-// RegistryChartName is the name of the chart for registry in the seed.
-const RegistryChartName = "registry-cache"
+// RegistryEnsurerResourceName is the name for registry cri ensurer resources in the shoot.
+const RegistryEnsurerResourceName = "extension-registry-cache-cri-ensurer"
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -30,14 +31,18 @@ const RegistryChartName = "registry-cache"
 type RegistryConfig struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// Mirrors is a slice of registry mirrors to deploy
-	Mirrors []RegistryMirror `json:"mirrors"`
+	// Caches is a slice of registry cache to deploy
+	Caches []RegistryCache `json:"caches"`
 }
 
-// RegistryMirror defines a registry mirror to deploy
-type RegistryMirror struct {
-	// UpstreamURL is the remote URL of registry to mirror
-	UpstreamURL string `json:"upstreamURL"`
-	// Port is the port on which the registry mirror is going to serve
-	Port int32 `json:"port"`
+// RegistryCache defines a registry cache to deploy
+type RegistryCache struct {
+	// Upstream is the remote registry host (and optionally port) to cache
+	Upstream string `json:"upstream"`
+	// Size is the size of the registry cache, defaults to 10Gi.
+	// +optional
+	Size *resource.Quantity `json:"size,omitempty"`
+	// GarbageCollectionEnabled enables/disables cache garbage collection, defaults to true.
+	// +optional
+	GarbageCollectionEnabled *bool `json:"garbageCollectionEnabled,omitempty"`
 }

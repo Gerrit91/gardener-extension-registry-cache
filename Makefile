@@ -27,7 +27,7 @@ IGNORE_OPERATION_ANNOTATION := true
 WEBHOOK_CONFIG_PORT	:= 8444
 WEBHOOK_CONFIG_MODE	:= url
 WEBHOOK_CONFIG_URL	:= host.docker.internal:${WEBHOOK_CONFIG_PORT}
-WEBHOOK_CERT_DIR    := ./example/admission-certs
+WEBHOOK_CERT_DIR    := ./example/admission
 EXTENSION_NAMESPACE	:=
 
 WEBHOOK_PARAM := --webhook-config-url=${WEBHOOK_CONFIG_URL}
@@ -134,7 +134,7 @@ generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(MOCKGEN)
 generate-in-docker:
 	docker run --rm -it -v /home/gerrit/go:/go -v $(PWD):/go/src/github.com/gerrit91/gardener-extension-registry-cache golang:1.19 \
 		sh -c "cd /go/src/github.com/gerrit91/gardener-extension-registry-cache \
-				&& make revendor install generate \
+				&& make revendor generate \
 				&& chown -R $(shell id -u):$(shell id -g) ."
 
 .PHONY: format

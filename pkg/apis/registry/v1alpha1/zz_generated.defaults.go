@@ -29,5 +29,13 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
+	scheme.AddTypeDefaultingFunc(&RegistryConfig{}, func(obj interface{}) { SetObjectDefaults_RegistryConfig(obj.(*RegistryConfig)) })
 	return nil
+}
+
+func SetObjectDefaults_RegistryConfig(in *RegistryConfig) {
+	for i := range in.Caches {
+		a := &in.Caches[i]
+		SetDefaults_RegistryCache(a)
+	}
 }
