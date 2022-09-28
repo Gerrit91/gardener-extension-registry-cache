@@ -81,6 +81,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 	if upstreamURL == "docker.io" {
 		upstreamURL = "registry-1.docker.io"
 	}
+	upstreamURL = fmt.Sprintf("https://%s", upstreamURL)
 
 	var (
 		service = &v1.Service{

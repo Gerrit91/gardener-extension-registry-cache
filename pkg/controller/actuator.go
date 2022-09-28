@@ -187,7 +187,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 
 		for i := range services.Items {
 			svc := services.Items[i]
-			criMirrors[svc.Labels[registryCacheServiceUpstreamLabel]] = fmt.Sprintf("%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port)
+			criMirrors[svc.Labels[registryCacheServiceUpstreamLabel]] = fmt.Sprintf("http://%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port)
 		}
 
 		return nil
