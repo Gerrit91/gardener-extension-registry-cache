@@ -14,6 +14,7 @@
 
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := registry-cache
+ADMISSION_NAME              := $(NAME)-admission
 IMAGE                       := ghcr.io/gerrit91/gardener-extension-registry-cache
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 HACK_DIR                    := $(REPO_ROOT)/hack
@@ -21,6 +22,18 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 LD_FLAGS                    := "-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(IMAGE_TAG)"
 LEADER_ELECTION             := false
 IGNORE_OPERATION_ANNOTATION := true
+
+
+WEBHOOK_CONFIG_PORT	:= 8444
+WEBHOOK_CONFIG_MODE	:= url
+WEBHOOK_CONFIG_URL	:= host.docker.internal:${WEBHOOK_CONFIG_PORT}
+WEBHOOK_CERT_DIR    := ./example/admission-certs
+EXTENSION_NAMESPACE	:=
+
+WEBHOOK_PARAM := --webhook-config-url=${WEBHOOK_CONFIG_URL}
+ifeq (${WEBHOOK_CONFIG_MODE}, service)
+  WEBHOOK_PARAM := --webhook-config-namespace=${EXTENSION_NAMESPACE}
+endif
 
 #########################################
 # Tools                                 #
@@ -44,6 +57,29 @@ start:
 		--config=./example/00-config.yaml \
 		--gardener-version="v1.39.0"
 
+
+.PHONY: start-admission
+start-admission:
+	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on go run \
+		-mod=vendor \
+		-ldflags ${LD_FLAGS} \
+		./cmd/${EXTENSION_PREFIX}-${ADMISSION_NAME} \
+		--kubeconfig=dev/garden-kubeconfig.yaml \
+		--webhook-config-server-host=0.0.0.0 \
+		--webhook-config-server-port=9443 \
+		--webhook-config-cert-dir=${WEBHOOK_CERT_DIR}
+
+.PHONY: debug-admission
+debug-admission:
+	LEADER_ELECTION_NAMESPACE=garden dlv debug \
+		./cmd/${EXTENSION_PREFIX}-${ADMISSION_NAME} -- \
+		--leader-election=${LEADER_ELECTION} \
+		--kubeconfig=dev/garden-kubeconfig.yaml \
+		--webhook-config-server-host=0.0.0.0 \
+		--webhook-config-server-port=9443 \
+		--health-bind-address=:8085 \
+		--webhook-config-cert-dir=${WEBHOOK_CERT_DIR}
+
 #################################################################
 # Rules related to binary build, Docker image build and release #
 #################################################################
@@ -51,7 +87,7 @@ start:
 .PHONY: install
 install:
 	@LD_FLAGS="-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(VERSION)" \
-	$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install.sh ./...
+	$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install.sh ./cmd/...
 
 .PHONY: docker-login
 docker-login:
@@ -60,6 +96,7 @@ docker-login:
 .PHONY: docker-images
 docker-images:
 	@docker build -t $(IMAGE):$(VERSION) -t $(IMAGE):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
+	@docker build -t $(IMAGE)/admission:$(VERSION) -t $(IMAGE)/admission:latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME)-admission .
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
@@ -77,7 +114,7 @@ revendor:
 .PHONY: clean
 clean:
 	@$(shell find ./example -type f -name "controller-registration.yaml" -exec rm '{}' \;)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/clean.sh ./cmd/... ./pkg/... ./test/...
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/clean.sh ./cmd/... ./pkg/...
 
 .PHONY: check-generate
 check-generate:
@@ -85,12 +122,13 @@ check-generate:
 
 .PHONY: check
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/...
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-charts.sh ./charts
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM) $(MOCKGEN)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/... ./test/...
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/...
+	$(MAKE) format
 
 .PHONE: generate-in-docker
 generate-in-docker:
@@ -101,7 +139,7 @@ generate-in-docker:
 
 .PHONY: format
 format: $(GOIMPORTS)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg ./test
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg
 
 .PHONY: test
 test:

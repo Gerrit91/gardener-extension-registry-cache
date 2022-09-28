@@ -26,13 +26,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// NewRegistryWrapperHealthChecker creates a new RegistryWrapperHealthChecker.
 func NewRegistryWrapperHealthChecker(inner healthcheck.HealthCheck) *RegistryWrapperHealthChecker {
 	return &RegistryWrapperHealthChecker{
 		inner: inner,
 	}
 }
 
-// IssuerWrapperHealthChecker contains all the information for the HealthCheck wrapper
+// RegistryWrapperHealthChecker contains all the information for the HealthCheck wrapper
 type RegistryWrapperHealthChecker struct {
 	logger     logr.Logger
 	seedClient client.Client

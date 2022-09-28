@@ -18,6 +18,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Friendly reminder if workspace location is not in $GOPATH
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+if [ "${SCRIPT_DIR}" != "$(realpath $GOPATH)/src/github.com/Gerrit91/gardener-extension-registry-cache/hack" ]; then
+  echo "'hack/update-codegen.sh' script does not work correctly if your workspace is outside GOPATH"
+  echo "Please check https://github.com/gardener/gardener/blob/master/docs/development/local_setup.md#get-the-sources"
+  exit 1
+fi
+
 # We need to explicitly pass GO111MODULE=off to k8s.io/code-generator as it is significantly slower otherwise,
 # see https://github.com/kubernetes/code-generator/issues/100.
 export GO111MODULE=off
@@ -31,7 +39,7 @@ bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh 
   github.com/gerrit91/gardener-extension-registry-cache/pkg/client \
   github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
-  "service:v1alpha1" \
+  "registry:v1alpha1" \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
@@ -39,8 +47,8 @@ bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh 
   github.com/gerrit91/gardener-extension-registry-cache/pkg/client \
   github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
   github.com/gerrit91/gardener-extension-registry-cache/pkg/apis \
-  "service:v1alpha1" \
-  --extra-peer-dirs=github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service,github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/conversion,k8s.io/apimachinery/pkg/runtime \
+  "registry:v1alpha1" \
+  --extra-peer-dirs=github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry,github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/conversion,k8s.io/apimachinery/pkg/runtime \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \

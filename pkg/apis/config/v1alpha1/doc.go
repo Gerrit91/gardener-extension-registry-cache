@@ -20,5 +20,5 @@
 //go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/config.json -template-dir ../../../../vendor/github.com/gardener/gardener/hack/api-reference/template -out-file ../../../../hack/api-reference/config.md
 
 // Package v1alpha1 contains the Registry Cache Service extension configuration.
-// +groupName=registry-cache.extensions.config.gardener.cloud
+// +groupName=config.registry.extensions.gardener.cloud
 package v1alpha1

@@ -13,6 +13,6 @@
 // limitations under the License.
 
 // +k8s:deepcopy-gen=package
-// +groupName=registry-cache.extensions.config.gardener.cloud
+// +groupName=config.registry.extensions.gardener.cloud
 
 package config

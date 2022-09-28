@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	serviceinstall "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/install"
+	registryinstall "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/install"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
 	"github.com/gerrit91/gardener-extension-registry-cache/pkg/controller/healthcheck"
 
@@ -77,13 +77,13 @@ func (o *Options) run(ctx context.Context) error {
 		return fmt.Errorf("could not update manager scheme: %w", err)
 	}
 
-	if err := serviceinstall.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := registryinstall.AddToScheme(mgr.GetScheme()); err != nil {
 		return fmt.Errorf("could not update manager scheme: %w", err)
 	}
 
 	ctrlConfig := o.registryOptions.Completed()
 	ctrlConfig.ApplyHealthCheckConfig(&healthcheck.DefaultAddOptions.HealthCheckConfig)
-	ctrlConfig.Apply(&controller.DefaultAddOptions.ServiceConfig)
+	ctrlConfig.Apply(&controller.DefaultAddOptions.Config)
 	o.controllerOptions.Completed().Apply(&controller.DefaultAddOptions.ControllerOptions)
 	o.healthOptions.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
 	o.reconcileOptions.Completed().Apply(&controller.DefaultAddOptions.IgnoreOperationAnnotation)

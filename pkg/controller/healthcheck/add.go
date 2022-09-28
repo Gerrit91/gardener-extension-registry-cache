@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	registryv1alpha1 "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/service/v1alpha1"
+	registryv1alpha1 "github.com/gerrit91/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	registrycontroller "github.com/gerrit91/gardener-extension-registry-cache/pkg/controller"
 
 	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"

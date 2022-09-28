@@ -14,10 +14,10 @@ spec:
   extensions:
   - type: registry-cache
     providerConfig:
-      apiVersion: service.registry.extensions.gardener.cloud/v1alpha1
+      apiVersion: registry.extensions.gardener.cloud/v1alpha1
       kind: RegistryConfig
-      registries:
-      - remoteURL: https://registry-1.docker.io
+      mirrors:
+      - upstreamURL: https://registry-1.docker.io
         port: 5000
   networking:
     type: calico
