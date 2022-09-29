@@ -35,7 +35,7 @@ CONTAINERD_IMPORTS_DIR="/etc/containerd/conf.d"
 CONFIG_INPUT_FILE="$1"
 TARGET_FILE="/host$CONTAINERD_IMPORTS_DIR/$(basename "$CONFIG_INPUT_FILE")"
 
-if ! grep -F '/etc/containerd/conf.d/*.toml' /host/etc/containerd/config.toml; then
+if ! grep -F '/etc/containerd/conf.d/*.toml' /host/etc/containerd/config.toml >/dev/null ; then
 	# https://github.com/gardener/gardener/blob/v1.51.0/docs/usage/custom-containerd-config.md
 	echo "ERROR: Only works on workers created with Gardener >v1.51, exiting."
 	exit 1
@@ -91,6 +91,7 @@ func (c *criEnsurer) Ensure() ([]client.Object, error) {
 	const (
 		reconcileScriptKey = "reconcile.sh"
 		configTomlKey      = "70-extension-registry-cache.toml"
+		workMountPath      = "/work"
 	)
 
 	configMap := &corev1.ConfigMap{
@@ -122,24 +123,26 @@ func (c *criEnsurer) Ensure() ([]client.Object, error) {
 				},
 				Spec: corev1.PodSpec{
 					HostPID: true,
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsUser:    pointer.Int64(0),
+						RunAsGroup:   pointer.Int64(0),
+						RunAsNonRoot: pointer.Bool(false),
+					},
 					Containers: []corev1.Container{
 						{
 							Name:  criEnsurerName,
 							Image: c.CRIEnsurerImage.Repository,
-							SecurityContext: &corev1.SecurityContext{
-								Privileged: pointer.Bool(true),
-							},
 							Command: []string{
 								"bash",
 								"-c",
-								"/work/reconcile.sh /work/zz-extension-registry-cache.toml",
+								fmt.Sprintf("%s/%s %s/%s", workMountPath, reconcileScriptKey, workMountPath, configTomlKey),
 							},
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "work",
 									ReadOnly:  true,
-									MountPath: "/work",
+									MountPath: workMountPath,
 								},
 								{
 									Name:      "host",
