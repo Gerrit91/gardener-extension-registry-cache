@@ -159,7 +159,6 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 		return fmt.Errorf("shoot client cannot be crated: %w", err)
 	}
 
-	var criMirrors map[string]string
 	selector := labels.NewSelector()
 	r, err := labels.NewRequirement(registryCacheServiceUpstreamLabel, selection.Exists, nil)
 	if err != nil {
@@ -178,20 +177,16 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 		return fmt.Errorf("not all services for all configured caches exist")
 	}
 
-	criMirrors = map[string]string{}
-	for i := range services.Items {
-		svc := services.Items[i]
-		criMirrors[svc.Labels[registryCacheServiceUpstreamLabel]] = fmt.Sprintf("http://%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port)
-	}
-
 	e := criEnsurer{
-		Name:            criEnsurerName,
-		Namespace:       registryCacheNamespaceName,
-		CRIEnsurerImage: ensurerImage,
-		RegistryMirrors: criMirrors,
+		Namespace:          registryCacheNamespaceName,
+		CRIEnsurerImage:    ensurerImage,
+		ReferencedServices: services,
 	}
 
-	os := e.Ensure()
+	os, err := e.Ensure()
+	if err != nil {
+		return err
+	}
 	objects = []client.Object{}
 	objects = append(objects, os...)
 

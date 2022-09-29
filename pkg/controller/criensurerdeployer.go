@@ -1,161 +1,216 @@
 package controller
 
 import (
+	"bytes"
 	"fmt"
-	"strings"
+	"text/template"
 
 	"github.com/gardener/gardener/pkg/utils/imagevector"
+	"github.com/gardener/gardener/pkg/utils/kubernetes"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type criEnsurer struct {
-	Name      string
 	Namespace string
 	Labels    map[string]string
 
 	CRIEnsurerImage *imagevector.Image
 
-	RegistryMirrors map[string]string
+	ReferencedServices *corev1.ServiceList
 }
 
 const (
-	criEnsurerName = "cri-config-ensurer"
-	scriptOfDeath  = `
-#!/bin/sh
+	criEnsurerName  = "cri-config-ensurer"
+	reconcileScript = `
+#!/usr/bin/env bash
 
 set -euo pipefail
 
+CONTAINERD_IMPORTS_DIR="/etc/containerd/conf.d"
+CONFIG_INPUT_FILE="$1"
+TARGET_FILE="/host$CONTAINERD_IMPORTS_DIR/$(basename "$CONFIG_INPUT_FILE")"
+
+if ! grep -F '/etc/containerd/conf.d/*.toml' /host/etc/containerd/config.toml; then
+	# https://github.com/gardener/gardener/blob/v1.51.0/docs/usage/custom-containerd-config.md
+	echo "ERROR: Only works on workers created with Gardener >v1.51, exiting."
+	exit 1
+fi
+
+if [ ! -e "$CONFIG_INPUT_FILE" ]; then
+	echo "ERROR: Config input file $CONFIG_INPUT_FILE could not be found, exiting."
+	exit 1
+fi
+
+mkdir -p "/host$CONTAINERD_IMPORTS_DIR"
+
 while true; do
-	echo "applying registry caches"
+	if ! cmp -s "$CONFIG_INPUT_FILE" "$TARGET_FILE" ; then
+		echo "applying registry mirrors"
+		cp -f "$CONFIG_INPUT_FILE" "$TARGET_FILE"
 
-	changed=false
-
-	for mirror in $@; do
-	registry=$(echo $mirror | cut -f1 -d'@')
-	endpoint=$(echo $mirror | cut -f2 -d'@')
-
-	line1="[plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"${registry}\"]"
-	line2="  endpoint = [\"${endpoint}\"]"
-
-	cat /host/etc/containerd/config.toml | grep -F "${line1}" && continue
-
-	changed=true
-
-	printf "$line1\n" >> /host/etc/containerd/config.toml
-	printf "$line2\n" >> /host/etc/containerd/config.toml
-	done
-
-	if [ "$changed" = true ]; then
-	echo "restarting containerd"
-	chroot /host systemctl restart containerd
-
-	echo "applied registry mirrors, sleeping for a minute"
+		echo "restarting containerd"
+		chroot /host systemctl restart containerd.service
+		echo "applied registry mirrors, sleeping for a minute"
 	else
-	echo "no changes required, sleeping for a minute"
+		echo "no changes required, sleeping for a minute"
 	fi
-
 	sleep 60
 done
 `
 )
 
-func (c *criEnsurer) Ensure() []client.Object {
+var configTemplate *template.Template
+
+func init() {
+	configTemplate = template.Must(template.New("").
+		Parse(`# governed by gardener-extension-registry-cache, do not edit
+{{ range $mirror := . -}}
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ $mirror.Host }}"]
+  endpoint = ["{{ $mirror.Endpoint }}"]
+{{ end -}}
+`))
+}
+
+func (c *criEnsurer) Ensure() ([]client.Object, error) {
 	if c.Labels == nil {
 		c.Labels = map[string]string{
-			"app": c.Name,
+			"app": criEnsurerName,
 		}
 	}
 
-	var registryMirrors []string
-	for host, address := range c.RegistryMirrors {
-		registryMirrors = append(registryMirrors, fmt.Sprintf(`'%s@%s'`, host, address))
+	toml, err := c.configToml()
+	if err != nil {
+		return nil, fmt.Errorf("unable to template toml: %w", err)
 	}
 
-	var (
-		configMap = &v1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      c.Name,
-				Namespace: c.Namespace,
-				Labels:    c.Labels,
-			},
-			Data: map[string]string{
-				"reconcile.sh": scriptOfDeath,
-			},
-		}
-
-		daemonSet = &appsv1.DaemonSet{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      c.Name,
-				Namespace: registryCacheNamespaceName,
-				Labels:    c.Labels,
-			},
-			Spec: appsv1.DaemonSetSpec{
-				Selector: &metav1.LabelSelector{
-					MatchLabels: c.Labels,
-				},
-				Template: v1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: c.Labels,
-					},
-					Spec: v1.PodSpec{
-						HostPID: true,
-						Containers: []v1.Container{
-							{
-								Name:  criEnsurerName,
-								Image: c.CRIEnsurerImage.Repository,
-								SecurityContext: &v1.SecurityContext{
-									Privileged: pointer.Bool(true),
-								},
-								Command: []string{
-									"sh", "-c", fmt.Sprintf("/scripts/reconcile.sh %s", strings.Join(registryMirrors, " ")),
-								},
-								ImagePullPolicy: v1.PullIfNotPresent,
-								VolumeMounts: []v1.VolumeMount{
-									{
-										Name:      "script",
-										ReadOnly:  true,
-										MountPath: "/scripts",
-									},
-									{
-										Name:      "host",
-										MountPath: "/host",
-									},
-								},
-							},
-						},
-						Volumes: []v1.Volume{
-							{
-								Name: "script",
-								VolumeSource: v1.VolumeSource{
-									ConfigMap: &v1.ConfigMapVolumeSource{
-										LocalObjectReference: v1.LocalObjectReference{
-											Name: c.Name,
-										},
-										DefaultMode: pointer.Int32(0744),
-									},
-								},
-							},
-							{
-								Name: "host",
-								VolumeSource: v1.VolumeSource{
-									HostPath: &v1.HostPathVolumeSource{
-										Path: "/",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
+	const (
+		reconcileScriptKey = "reconcile.sh"
+		configTomlKey      = "zz-extension-registry-cache.toml"
 	)
+
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      criEnsurerName,
+			Namespace: c.Namespace,
+			Labels:    c.Labels,
+		},
+		Data: map[string]string{
+			reconcileScriptKey: reconcileScript,
+			configTomlKey:      toml,
+		},
+	}
+	utilruntime.Must(kubernetes.MakeUnique(configMap))
+
+	daemonSet := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      criEnsurerName,
+			Namespace: registryCacheNamespaceName,
+			Labels:    c.Labels,
+		},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: c.Labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: c.Labels,
+				},
+				Spec: corev1.PodSpec{
+					HostPID: true,
+					Containers: []corev1.Container{
+						{
+							Name:  criEnsurerName,
+							Image: c.CRIEnsurerImage.Repository,
+							SecurityContext: &corev1.SecurityContext{
+								Privileged: pointer.Bool(true),
+							},
+							Command: []string{
+								"bash",
+								"-c",
+								"/work/reconcile.sh /work/zz-extension-registry-cache.toml",
+							},
+							ImagePullPolicy: corev1.PullIfNotPresent,
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "work",
+									ReadOnly:  true,
+									MountPath: "/work",
+								},
+								{
+									Name:      "host",
+									MountPath: "/host",
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "work",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: configMap.Name,
+									},
+									Items: []corev1.KeyToPath{
+										{
+											// only make reconcile script executable but not config file
+											Key:  reconcileScriptKey,
+											Path: reconcileScriptKey,
+											Mode: pointer.Int32(int32(0744)),
+										},
+										{
+											Key:  configTomlKey,
+											Path: configTomlKey,
+										},
+									},
+									Optional: pointer.Bool(false),
+								},
+							},
+						},
+						{
+							Name: "host",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: "/",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
 	return []client.Object{
 		configMap,
 		daemonSet,
+	}, nil
+}
+
+func (c *criEnsurer) configToml() (string, error) {
+	type criMirror struct {
+		Host     string
+		Endpoint string
 	}
+
+	var mirrors []*criMirror
+	for i := range c.ReferencedServices.Items {
+		svc := c.ReferencedServices.Items[i]
+		mirrors = append(mirrors, &criMirror{
+			Host:     svc.Labels[registryCacheServiceUpstreamLabel],
+			Endpoint: fmt.Sprintf("http://%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port),
+		})
+	}
+
+	var buf bytes.Buffer
+	if err := configTemplate.Execute(&buf, mirrors); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
