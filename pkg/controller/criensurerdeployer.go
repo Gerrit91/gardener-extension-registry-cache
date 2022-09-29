@@ -64,6 +64,18 @@ done
 `
 )
 
+var configTemplate *template.Template
+
+func init() {
+	configTemplate = template.Must(template.New("").
+		Parse(`# governed by gardener-extension-registry-cache, do not edit
+{{ range $mirror := . -}}
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ $mirror.Host }}"]
+  endpoint = ["{{ $mirror.Endpoint }}"]
+{{ end -}}
+`))
+}
+
 func (c *criEnsurer) Ensure() ([]client.Object, error) {
 	if c.Labels == nil {
 		c.Labels = map[string]string{
@@ -178,19 +190,8 @@ func (c *criEnsurer) configToml() (string, error) {
 		})
 	}
 
-	text := `# governed by gardener-extension-registry-cache, do not edit
-{{ range $mirror := . -}}
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ $mirror.Host }}"]
-  endpoint = ["{{ $mirror.Endpoint }}"]
-{{ end }}`
-
-	tpl, err := template.New("").Parse(text)
-	if err != nil {
-		return "", err
-	}
-
 	var buf bytes.Buffer
-	if err := tpl.Execute(&buf, mirrors); err != nil {
+	if err := configTemplate.Execute(&buf, mirrors); err != nil {
 		return "", err
 	}
 
