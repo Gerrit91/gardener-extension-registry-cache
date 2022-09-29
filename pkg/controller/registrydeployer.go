@@ -38,6 +38,7 @@ type registryCache struct {
 	Upstream                 string
 	VolumeSize               resource.Quantity
 	GarbageCollectionEnabled bool
+	StorageClassName         *string
 
 	RegistryImage *imagevector.Image
 }
@@ -146,7 +147,8 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 							Labels: c.Labels,
 						},
 						Spec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+							AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+							StorageClassName: c.StorageClassName,
 							Resources: v1.ResourceRequirements{
 								Requests: v1.ResourceList{
 									v1.ResourceStorage: c.VolumeSize,

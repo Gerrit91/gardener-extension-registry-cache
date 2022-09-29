@@ -37,4 +37,6 @@ type RegistryCache struct {
 	Size *resource.Quantity
 	// GarbageCollectionEnabled enables/disables cache garbage collection
 	GarbageCollectionEnabled *bool
+	// StorageClassName
+	StorageClassName *string
 }
