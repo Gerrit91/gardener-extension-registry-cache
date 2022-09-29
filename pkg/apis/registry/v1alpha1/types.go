@@ -45,4 +45,7 @@ type RegistryCache struct {
 	// GarbageCollectionEnabled enables/disables cache garbage collection, defaults to true.
 	// +optional
 	GarbageCollectionEnabled *bool `json:"garbageCollectionEnabled,omitempty"`
+	// StorageClassName specifies the storageclass to use for the cache's volume
+	// +optional
+	StorageClassName *string `json:"storageClassName,omitempty"`
 }

@@ -132,6 +132,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 			VolumeSize:               *cache.Size,
 			GarbageCollectionEnabled: *cache.GarbageCollectionEnabled,
 			RegistryImage:            registryImage,
+			StorageClassName:         cache.StorageClassName,
 		}
 
 		os, err := c.Ensure()

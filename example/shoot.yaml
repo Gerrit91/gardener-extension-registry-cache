@@ -19,6 +19,7 @@ spec:
       caches:
       - upstream: docker.io
         size: 500Mi
+        storageClassName: "standard"
       - upstream: ghcr.io
       - upstream: quay.io
         garbageCollectionEnabled: false

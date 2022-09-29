@@ -62,6 +62,18 @@ bool
 <p>GarbageCollectionEnabled enables/disables cache garbage collection, defaults to true.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>storageClassName</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>StorageClassName specifies the storageclass to use for the cache&rsquo;s volume</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryConfig">RegistryConfig
