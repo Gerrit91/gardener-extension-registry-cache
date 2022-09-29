@@ -90,7 +90,7 @@ func (c *criEnsurer) Ensure() ([]client.Object, error) {
 
 	const (
 		reconcileScriptKey = "reconcile.sh"
-		configTomlKey      = "zz-extension-registry-cache.toml"
+		configTomlKey      = "70-extension-registry-cache.toml"
 	)
 
 	configMap := &corev1.ConfigMap{
