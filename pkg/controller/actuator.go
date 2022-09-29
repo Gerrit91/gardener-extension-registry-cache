@@ -178,7 +178,6 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 	}
 
 	e := criEnsurer{
-		Name:               criEnsurerName,
 		Namespace:          registryCacheNamespaceName,
 		CRIEnsurerImage:    ensurerImage,
 		ReferencedServices: services,
