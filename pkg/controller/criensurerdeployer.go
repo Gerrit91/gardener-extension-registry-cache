@@ -91,6 +91,7 @@ func (c *criEnsurer) Ensure() ([]client.Object, error) {
 	const (
 		reconcileScriptKey = "reconcile.sh"
 		configTomlKey      = "70-extension-registry-cache.toml"
+		workMountPath      = "/work"
 	)
 
 	configMap := &corev1.ConfigMap{
@@ -132,14 +133,14 @@ func (c *criEnsurer) Ensure() ([]client.Object, error) {
 							Command: []string{
 								"bash",
 								"-c",
-								"/work/reconcile.sh /work/zz-extension-registry-cache.toml",
+								fmt.Sprintf("%s/%s %s/%s", workMountPath, reconcileScriptKey, workMountPath, configTomlKey),
 							},
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "work",
 									ReadOnly:  true,
-									MountPath: "/work",
+									MountPath: workMountPath,
 								},
 								{
 									Name:      "host",
