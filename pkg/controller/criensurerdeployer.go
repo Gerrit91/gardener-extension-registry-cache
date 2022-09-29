@@ -88,6 +88,11 @@ func (c *criEnsurer) Ensure() ([]client.Object, error) {
 		return nil, fmt.Errorf("unable to template toml: %w", err)
 	}
 
+	const (
+		reconcileScriptKey = "reconcile.sh"
+		configTomlKey      = "zz-extension-registry-cache.toml"
+	)
+
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      criEnsurerName,
@@ -95,8 +100,8 @@ func (c *criEnsurer) Ensure() ([]client.Object, error) {
 			Labels:    c.Labels,
 		},
 		Data: map[string]string{
-			"reconcile.sh":                     reconcileScript,
-			"zz-extension-registry-cache.toml": toml,
+			reconcileScriptKey: reconcileScript,
+			configTomlKey:      toml,
 		},
 	}
 	utilruntime.Must(kubernetes.MakeUnique(configMap))
@@ -151,7 +156,19 @@ func (c *criEnsurer) Ensure() ([]client.Object, error) {
 									LocalObjectReference: corev1.LocalObjectReference{
 										Name: configMap.Name,
 									},
-									DefaultMode: pointer.Int32(0744),
+									Items: []corev1.KeyToPath{
+										{
+											// only make reconcile script executable but not config file
+											Key:  reconcileScriptKey,
+											Path: reconcileScriptKey,
+											Mode: pointer.Int32(int32(0744)),
+										},
+										{
+											Key:  configTomlKey,
+											Path: configTomlKey,
+										},
+									},
+									Optional: pointer.Bool(false),
 								},
 							},
 						},
